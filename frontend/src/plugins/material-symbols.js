@@ -39,26 +39,83 @@ function checkMaterialSymbolsLoaded() {
 
 // Function to ensure the font is loaded
 function ensureFontIsLoaded() {
-  // Check if we already have the Material Symbols font link
-  const existingLink = document.querySelector('link[href*="Material+Symbols+Outlined"]');
+  // Check if we already have the Material Symbols font links
+  const existingOutlinedLink = document.querySelector('link[href*="Material+Symbols+Outlined"]');
+  const existingRoundedLink = document.querySelector('link[href*="Material+Symbols+Rounded"]');
+  const existingFilledLink = document.querySelector('link[href*="Material+Symbols+Sharp"]');
   
-  if (!existingLink) {
-    console.log('Adding Material Symbols font link dynamically');
+  // Add Outlined variant if needed
+  if (!existingOutlinedLink) {
+    console.log('Adding Material Symbols Outlined font link dynamically');
     const fontLink = document.createElement('link');
     fontLink.rel = 'stylesheet';
     fontLink.href = 'https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:opsz,wght,FILL,GRAD@20..48,100..700,0..1,0..200';
     document.head.appendChild(fontLink);
   }
+  
+  // Add Rounded variant if needed
+  if (!existingRoundedLink) {
+    console.log('Adding Material Symbols Rounded font link dynamically');
+    const fontLink = document.createElement('link');
+    fontLink.rel = 'stylesheet';
+    fontLink.href = 'https://fonts.googleapis.com/css2?family=Material+Symbols+Rounded:opsz,wght,FILL,GRAD@20..48,100..700,0..1,0..200';
+    document.head.appendChild(fontLink);
+  }
+  
+  // Add Filled variant if needed
+  if (!existingFilledLink) {
+    console.log('Adding Material Symbols Sharp font link dynamically');
+    const fontLink = document.createElement('link');
+    fontLink.rel = 'stylesheet';
+    fontLink.href = 'https://fonts.googleapis.com/css2?family=Material+Symbols+Sharp:opsz,wght,FILL,GRAD@20..48,100..700,0..1,0..200';
+    document.head.appendChild(fontLink);
+  }
+  
+  // Add a specific set of icons with FILL=1 for filled variants
+  const filledIconsLink = document.createElement('link');
+  filledIconsLink.rel = 'stylesheet';
+  filledIconsLink.href = 'https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:opsz,wght,FILL,GRAD@24,400,1,0&family=Material+Symbols+Rounded:opsz,wght,FILL,GRAD@24,400,1,0';
+  document.head.appendChild(filledIconsLink);
 }
 
 // Initialize when DOM is loaded
 if (document.readyState === 'loading') {
   document.addEventListener('DOMContentLoaded', () => {
-    setTimeout(checkMaterialSymbolsLoaded, 1000); // Delay check to ensure font has time to load
+    setTimeout(() => {
+      ensureFontIsLoaded(); // Always load fonts
+      setTimeout(checkMaterialSymbolsLoaded, 1000); // Then check if loaded correctly
+    }, 500);
   });
 } else {
-  // DOM already loaded, check after a short delay
+  // DOM already loaded, load fonts immediately
+  ensureFontIsLoaded();
   setTimeout(checkMaterialSymbolsLoaded, 1000);
+}
+
+// Add CSS rules for filled icons
+const addFilledIconStyles = () => {
+  const styleEl = document.createElement('style');
+  styleEl.textContent = `
+    .material-icons-filled, 
+    .material-symbols-filled {
+      font-variation-settings: 'FILL' 1, 'wght' 400, 'GRAD' 0, 'opsz' 24;
+    }
+    .material-icons-outlined,
+    .material-symbols-outlined {
+      font-variation-settings: 'FILL' 0, 'wght' 400, 'GRAD' 0, 'opsz' 24;
+    }
+    .icon-maroon {
+      color: #722b2b !important;
+    }
+  `;
+  document.head.appendChild(styleEl);
+};
+
+// Add the styles when DOM is ready
+if (document.readyState === 'loading') {
+  document.addEventListener('DOMContentLoaded', addFilledIconStyles);
+} else {
+  addFilledIconStyles();
 }
 
 // Export for explicit import if needed

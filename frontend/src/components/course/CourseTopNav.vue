@@ -1,87 +1,69 @@
 <template>
-  <div class="sticky top-0 z-10 bg-white border-b border-slate-200 shadow-sm">
-    <div class="px-6 py-4">
-      <div class="flex items-center justify-between">
-        <!-- Left Section -->
-        <div class="flex items-center space-x-4">
-          <button
-            @click="$emit('back-to-courses')"
-            class="py-2 px-3 rounded-lg bg-maroon-500 hover:bg-maroon-600 text-slate-600 hover:text-maroon-600 transition-colors"
-          >
-            <span class="material-symbols-outlined">arrow_back</span>
-          </button>
-          <div class="flex flex-col">
-            <h1 class="text-xl font-bold text-slate-900">{{ course.title }}</h1>
-            <div class="flex items-center space-x-2 mt-1">
-              <span class="material-symbols-outlined text-maroon-600">person</span>
-              <div class="flex items-center space-x-2">
-                <span class="text-sm font-medium text-slate-700">{{
-                  course.instructor?.name
-                }}</span>
-                <span class="text-xs text-slate-500">{{ course.instructor?.title }}</span>
-              </div>
-            </div>
-          </div>
-        </div>
-
-        <!-- Right Section -->
-        <div class="flex items-center space-x-6">
-          <!-- Progress Section -->
-          <div v-if="progress" class="flex items-center space-x-3">
-            <div class="w-32 h-2 bg-slate-100 rounded-full overflow-hidden">
-              <div
-                class="h-full bg-gradient-to-r from-maroon-500 to-maroon-600 rounded-full transition-all duration-500"
-                :style="{ width: `${progress}%` }"
-              ></div>
-            </div>
-            <span class="text-sm font-medium text-slate-700">{{ progress }}%</span>
-          </div>
-
-          <!-- Action Buttons -->
-          <div class="flex items-center space-x-2">
-            <button
-              @click="$emit('toggle-bookmark')"
-              class="p-2 rounded-lg hover:bg-maroon-50 transition-colors"
-              :class="isBookmarked ? 'text-yellow-500' : 'text-slate-400 hover:text-maroon-600'"
-            >
-              <span class="material-symbols-outlined" :class="{ filled: isBookmarked }"
-                >bookmark</span
-              >
-            </button>
-            <button
-              @click="$emit('toggle-notes')"
-              class="p-2 rounded-lg hover:bg-maroon-50 text-slate-400 hover:text-maroon-600 transition-colors"
-            >
-              <span class="material-symbols-outlined">edit_note</span>
-            </button>
-          </div>
-        </div>
+  <div class="flex items-center justify-between w-full px-4 py-2 bg-white shadow">
+    <div class="flex items-center">
+      <button
+        class="p-1 mr-2 text-slate-700 hover:text-slate-900 transition-colors"
+        @click="$emit('goBack')"
+      >
+        <span class="material-symbols-rounded text-xl">arrow_back</span>
+      </button>
+      <div v-if="course" class="flex flex-col">
+        <h2 class="text-sm font-semibold text-slate-800">{{ course.title }}</h2>
+        <p v-if="currentLecture" class="text-xs text-slate-500">{{ currentLecture.title }}</p>
       </div>
+    </div>
+    <div class="flex-1 mx-4 max-w-md" v-if="progress">
+      <div class="w-full bg-gray-200 rounded-full h-2">
+        <div
+          class="bg-maroon-600 h-2 rounded-full"
+          :style="{ width: `${progress}%` }"
+        ></div>
+      </div>
+    </div>
+    <div class="flex items-center space-x-2">
+      <button
+        class="p-1 rounded hover:bg-gray-100 transition-colors"
+        :class="{
+          'text-maroon-600': isBookmarked,
+          'text-maroon-500 hover:text-maroon-600': !isBookmarked,
+        }"
+        @click="$emit('toggleBookmark')"
+        title="Bookmark this lecture"
+      >
+        <span 
+          class="material-symbols-rounded icon-maroon"
+          :class="{'material-symbols-filled': isBookmarked}"
+        >
+          bookmark
+        </span>
+      </button>
+      <button
+        class="p-1 rounded hover:bg-gray-100 transition-colors text-maroon-500 hover:text-maroon-600"
+        @click="$emit('toggleNotes')"
+        title="Show/hide notes"
+      >
+        <span class="material-symbols-rounded icon-maroon">edit_note</span>
+      </button>
     </div>
   </div>
 </template>
 
-<script>
-export default {
-  name: 'CourseTopNav',
-  props: {
-    course: {
-      type: Object,
-      required: true,
-    },
-    isBookmarked: {
-      type: Boolean,
-      default: false,
-    },
-    progress: {
-      type: Number,
-      default: 0,
-    },
+<script setup>
+const props = defineProps({
+  course: Object,
+  currentLecture: {
+    type: Object,
+    default: null
   },
-  emits: ['back-to-courses', 'toggle-bookmark', 'toggle-notes'],
-}
+  progress: Number,
+  isBookmarked: Boolean,
+})
+
+defineEmits(['goBack', 'toggleBookmark', 'toggleNotes'])
 </script>
 
 <style scoped>
-/* Material symbol styles moved to main.css */
+.material-symbols-rounded {
+  font-size: 24px;
+}
 </style>

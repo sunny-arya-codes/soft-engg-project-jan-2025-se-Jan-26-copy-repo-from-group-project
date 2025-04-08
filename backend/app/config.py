@@ -56,6 +56,7 @@ class Settings(BaseSettings):
     LANGSMITH_API_KEY: str
     LANGSMITH_PROJECT: str
     GOOGLE_API_KEY: str
+    YOUTUBE_API_KEY: Optional[str] = None
 
     # S3 Storage Settings
     S3_ACCESS_KEY: str = ""

@@ -1,0 +1,44 @@
+/* Button styles for the application */
+
+/* Close button style that works on white backgrounds */
+.close-button {
+  width: 36px;
+  height: 36px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  border-radius: 50%;
+  border: none;
+  background-color: #f1f1f1; /* Light gray background */
+  color: #666666; /* Darker text */
+  cursor: pointer;
+  transition: all 0.2s ease;
+}
+
+.close-button:hover {
+  background-color: #8b0000; /* Maroon on hover */
+  color: white;
+}
+
+/* Material icon close button variant */
+.close-button-material {
+  padding: 8px;
+  border-radius: 50%;
+  background-color: #f1f1f1;
+  color: #000000;
+  transition: all 0.2s ease;
+}
+
+.close-button-material:hover {
+  background-color: #8b0000;
+  color: white;
+}
+
+/* For use with existing buttons that have hover:bg-slate-200 */
+.material-icon-dark {
+  color: #666666 !important;
+}
+
+.material-icon-dark:hover {
+  color: #8b0000 !important;
+} 

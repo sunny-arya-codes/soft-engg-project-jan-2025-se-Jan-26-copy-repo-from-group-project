@@ -1,13 +1,20 @@
 <script>
+// Import components first, then other dependencies
 import SideNavBar from '@/layouts/SideNavBar.vue'
 import ChatBotWrapper from '@/components/ChatBotWrapper.vue'
-import api from '@/utils/api'
 import LoadingSpinner from '@/components/common/LoadingSpinner.vue'
-import { useToast } from 'vue-toastification'
 import AlertMessage from '@/components/common/AlertMessage.vue'
-import { useChatStore } from '@/stores/useChatStore'
-import { onMounted, ref } from 'vue'
+
+// Then import utilities and services
+import api from '@/utils/api'
+import { useToast } from 'vue-toastification'
 import formatDateFunc from '@/utils/formatDate'
+
+// Add Vue imports
+import { ref, onMounted } from 'vue'
+
+// Finally import store-related items
+import { useChatStore } from '@/stores/useChatStore'
 import useAuthStore from '@/stores/useAuthStore'
 import { useCourseStore } from '@/stores/courseStore'
 import { FacultyNotificationService } from '@/services/facultyNotification.service'
@@ -188,6 +195,7 @@ export default {
         this.isDataLoading = false
       }
     },
+    
     async deleteBookMarkedMaterial(bookmarkId) {
       try {
         this.isDataLoading = true
@@ -201,45 +209,29 @@ export default {
         }
 
         const response = await api.delete(`/user/bookmarked-materials/${bookmarkId}`, headers)
-        if (response.status !== 200) {
-          this.showErrorToast(error, 'Failed to delete the Bookmark')
-          throw new Error('Failed to delete the data')
-        }
-        console.log(response.data)
-        this.bookmarkedMaterials = response.data
-        this.showSuccessToast('Bookmark Deleted Successfully')
+        if (response.status !== 200) throw new Error('Failed to delete bookmarked material')
+        this.showSuccessToast('Bookmarked Material deleted successfully')
+        // remove the bookmark from the list
+        this.bookmarkedMaterials = this.bookmarkedMaterials.filter(
+          (bookmark) => bookmark.id !== bookmarkId
+        )
       } catch (error) {
-        this.showErrorToast(error, 'Failed to delete the Bookmark')
+        this.showErrorToast(error, 'Failed to delete bookmarked material')
         throw error
       } finally {
         this.isDataLoading = false
       }
     },
-    getNotifications() {
-      if (!this.authStore.isLoggedIn) {
-        console.log('User not logged in, skipping notifications')
-        return
-      }
-
-      console.log('Getting notifications')
+    async getNotifications() {
       try {
-        // Don't pass custom headers, let the API interceptor handle authorization
-        FacultyNotificationService.getRecentNotifications()
-          .then((response) => {
-            if (response && response.data) {
-              this.notifications = response.data.slice(0, 5) // Get only the first 5 notifications
-              console.log('Loaded notifications:', this.notifications)
-            }
-          })
-          .catch((error) => {
-            console.error('Failed to load notifications:', error)
-          })
+        // Use the composition API notifications ref from setup()
+        const response = await FacultyNotificationService.getRecentNotifications()
+        if (response && response.data) {
+          this.notifications = response.data
+        }
       } catch (error) {
         console.error('Failed to load notifications:', error)
       }
-    },
-    formatTime(timestamp) {
-      return formatDateFunc(timestamp)
     },
     getNotificationTypeClass(type) {
       return {
@@ -273,27 +265,28 @@ export default {
     const authStore = useAuthStore()
     const courseStore = useCourseStore()
     const toast = useToast()
-    const isLoading = ref(false)
-    const notifications = ref([])
+    // These refs are not needed since they're already in data()
+    // const notifications = ref([])
     const courses = ref([])
     const userInfo = ref({
       name: 'User',
     })
 
-    const loadNotifications = async () => {
-      try {
-        // Don't pass custom headers, let the API interceptor handle authorization
-        const response = await FacultyNotificationService.getRecentNotifications()
-        if (response && response.data) {
-          notifications.value = response.data
-        }
-      } catch (error) {
-        console.error('Failed to load notifications:', error)
-      }
-    }
+    // This isn't needed since we have getNotifications() in methods
+    // const loadNotifications = async () => {
+    //   try {
+    //     // Don't pass custom headers, let the API interceptor handle authorization
+    //     const response = await FacultyNotificationService.getRecentNotifications()
+    //     if (response && response.data) {
+    //       notifications.value = response.data
+    //     }
+    //   } catch (error) {
+    //     console.error('Failed to load notifications:', error)
+    //   }
+    // }
 
     const loadCourses = async () => {
-      isLoading.value = true
+      // Use isLoading from data()
       try {
         const response = await courseStore.fetchCourses()
         if (response && response.data) {
@@ -302,8 +295,6 @@ export default {
       } catch (error) {
         console.error('Failed to load courses:', error)
         toast.error('Failed to load your courses')
-      } finally {
-        isLoading.value = false
       }
     }
 
@@ -323,22 +314,6 @@ export default {
 
     const formatTime = (timestamp) => {
       return formatDateFunc(timestamp)
-    }
-
-    const getNotificationTypeClass = (type) => {
-      return {
-        'bg-blue-100 text-blue-800': type === 'course',
-        'bg-purple-100 text-purple-800': type === 'system',
-      }
-    }
-
-    const getNotificationPriorityClass = (priority) => {
-      return {
-        'bg-green-100 text-green-800': priority === 'low',
-        'bg-yellow-100 text-yellow-800': priority === 'medium',
-        'bg-orange-100 text-orange-800': priority === 'high',
-        'bg-red-100 text-red-800': priority === 'urgent',
-      }
     }
 
     const getStatusClass = (status) => {
@@ -363,17 +338,15 @@ export default {
     onMounted(() => {
       getUserInfo()
       loadCourses()
-      loadNotifications()
+      // Remove this line since we're calling getNotifications() in mounted()
+      // loadNotifications()
     })
 
     return {
       userInfo,
-      // notifications,
-      // courses,
-      isLoading,
+      courses,
       formatTime,
-      getNotificationTypeClass,
-      getNotificationPriorityClass,
+      // Remove functions that are already defined in methods
       getStatusClass,
       getStatusText,
     }

@@ -98,9 +98,9 @@
       </div>
 
       <!-- Content when loaded -->
-      <div v-else-if="currentLecture" class="flex-1 overflow-hidden flex flex-col lg:flex-row">
+      <div v-else-if="currentLecture" class="flex-1 overflow-hidden flex flex-col">
         <!-- Lecture Video and Content -->
-        <div class="w-full lg:w-2/3 h-full flex flex-col overflow-auto">
+        <div class="w-full h-full flex flex-col overflow-auto">
           <!-- Video Player -->
           <div class="w-full bg-gray-900">
             <CourseVideoPlayer 
@@ -116,15 +116,70 @@
             </div>
           </div>
 
-          <!-- Lecture Content -->
-          <div class="flex-1 overflow-auto p-4">
-            <CourseLectureContent 
-              v-if="currentLecture" 
-              :lecture="currentLecture"
-            />
+          <!-- Tabs for content/resources/notes -->
+          <div class="border-b border-gray-200 dark:border-gray-700 px-4">
+            <nav class="flex space-x-4">
+              <button
+                @click="activeTab = 'content'"
+                class="py-3 px-1 border-b-2 font-medium text-sm"
+                :class="activeTab === 'content' 
+                  ? 'border-primary text-primary dark:text-white' 
+                  : 'border-transparent text-gray-500 hover:text-gray-700 dark:text-gray-400 dark:hover:text-gray-300'"
+              >
+                Lecture Content
+              </button>
+              <button
+                @click="activeTab = 'resources'"
+                class="py-3 px-1 border-b-2 font-medium text-sm"
+                :class="activeTab === 'resources' 
+                  ? 'border-primary text-primary dark:text-white' 
+                  : 'border-transparent text-gray-500 hover:text-gray-700 dark:text-gray-400 dark:hover:text-gray-300'"
+              >
+                Transcription & AI
+              </button>
+              <button
+                @click="activeTab = 'notes'"
+                class="py-3 px-1 border-b-2 font-medium text-sm"
+                :class="activeTab === 'notes' 
+                  ? 'border-primary text-primary dark:text-white' 
+                  : 'border-transparent text-gray-500 hover:text-gray-700 dark:text-gray-400 dark:hover:text-gray-300'"
+              >
+                Your Notes
+              </button>
+            </nav>
+          </div>
+
+          <!-- Tab content -->
+          <div class="flex-1 overflow-auto">
+            <!-- Lecture Content Tab -->
+            <div v-if="activeTab === 'content'" class="p-4">
+              <CourseLectureContent 
+                v-if="currentLecture" 
+                :lecture="currentLecture"
+              />
+            </div>
+
+            <!-- Resources Tab -->
+            <div v-else-if="activeTab === 'resources'" class="h-full">
+              <LectureTranscription
+                v-if="currentLecture"
+                :lectureId="currentLecture.id"
+                :courseId="courseId"
+                :videoUrl="currentLecture.video_url"
+              />
+            </div>
+
+            <!-- Notes Tab -->
+            <div v-else-if="activeTab === 'notes'" class="h-full">
+              <LectureNotes 
+                v-if="currentLecture" 
+                :lectureId="currentLecture.id" 
+                :courseId="courseId"
+              />
+            </div>
             
             <!-- Mobile Navigation Controls -->
-            <div class="flex lg:hidden items-center justify-between mt-8 mb-4 border-t pt-4 border-gray-200 dark:border-gray-700">
+            <div class="flex lg:hidden items-center justify-between mt-8 mb-4 border-t pt-4 border-gray-200 dark:border-gray-700 px-4">
               <button
                 @click="navigateToPreviousLecture"
                 class="flex items-center space-x-1 px-3 py-2 rounded-lg bg-gray-100 dark:bg-gray-800 disabled:opacity-50"
@@ -154,15 +209,6 @@
             </div>
           </div>
         </div>
-
-        <!-- Notes Panel -->
-        <div class="w-full lg:w-1/3 border-l border-gray-200 dark:border-gray-700 h-full overflow-auto">
-          <LectureNotes 
-            v-if="currentLecture" 
-            :lectureId="currentLecture.id" 
-            :courseId="courseId"
-          />
-        </div>
       </div>
     </div>
   </div>
@@ -175,6 +221,7 @@ import CourseSideNav from '@/components/course/CourseSideNav.vue';
 import CourseVideoPlayer from '@/components/course/CourseVideoPlayer.vue';
 import CourseLectureContent from '@/components/course/CourseLectureContent.vue';
 import LectureNotes from '@/components/course/LectureNotes.vue';
+import LectureTranscription from '@/components/course/LectureTranscription.vue';
 
 export default {
   components: {
@@ -182,6 +229,7 @@ export default {
     CourseVideoPlayer,
     CourseLectureContent,
     LectureNotes,
+    LectureTranscription,
   },
   props: {
     courseId: {
@@ -207,6 +255,7 @@ export default {
     const completedLectures = ref([]);
     const videoProgress = ref(0);
     const isLectureCompleted = ref(false);
+    const activeTab = ref('content');
     
     // Computed properties
     const courseWeeks = computed(() => {
@@ -438,6 +487,7 @@ export default {
       currentLectureIndex,
       hasPreviousLecture,
       hasNextLecture,
+      activeTab,
       fetchLectureData,
       handleVideoError,
       handleVideoComplete,

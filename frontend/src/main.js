@@ -1,11 +1,21 @@
 import './assets/main.css'
+import './assets/tailwind.css'
+import './assets/css/icons.css'
+
+// Make sure TailwindCSS is initialized properly
+document.addEventListener('DOMContentLoaded', () => {
+  console.log('TailwindCSS initialized');
+});
+
+// Import material-symbols.js explicitly
+import './plugins/material-symbols.js'
+
 import { createApp } from 'vue'
 import { createPinia } from 'pinia'
 import Toast from 'vue-toastification'
 import '@fortawesome/fontawesome-free/css/all.css'
 import 'vue-toastification/dist/index.css'
 // Configure Material Symbols (ensure icons render correctly)
-import './plugins/material-symbols'
 
 import App from './App.vue'
 import router from './router'

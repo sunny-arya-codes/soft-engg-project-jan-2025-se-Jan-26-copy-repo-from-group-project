@@ -49,17 +49,26 @@ async def get_current_user(token: str = Depends(oauth2_scheme), db: AsyncSession
         headers={"WWW-Authenticate": "Bearer"},
     )
     try:
+        # Handle case where token includes 'Bearer ' prefix
+        if token.startswith('Bearer '):
+            token = token[7:]
+            
         payload = jwt.decode(token, JWT_SECRET_KEY, algorithms=[ALGORITHM])
         user_id: str = payload.get("sub")
         if user_id is None:
             raise credentials_exception
-    except JWTError:
+    except JWTError as e:
+        logger.error(f"JWT Error: {str(e)}")
         raise credentials_exception
     
-    user = await db.get(User, uuid.UUID(user_id))
-    if user is None:
+    try:
+        user = await db.get(User, uuid.UUID(user_id))
+        if user is None:
+            raise credentials_exception
+        return user
+    except Exception as e:
+        logger.error(f"Database error in get_current_user: {str(e)}")
         raise credentials_exception
-    return user
 
 async def get_optional_user(token: str = Depends(oauth2_scheme), db: AsyncSession = Depends(get_db)):
     try:
@@ -68,6 +77,12 @@ async def get_optional_user(token: str = Depends(oauth2_scheme), db: AsyncSessio
         return None
 
 async def get_current_active_user(current_user: User = Depends(get_current_user)):
+    # No role enforcement here - all authenticated users have access
+    if current_user is None:
+        raise HTTPException(
+            status_code=status.HTTP_401_UNAUTHORIZED,
+            detail="Authentication required"
+        )
     return current_user
 
 class UserSchema(BaseModel):
@@ -328,9 +343,58 @@ async def get_users(
 
 
 @router.get("/users/me", response_model=UserOut, summary="Get current user profile")
-async def get_current_user_profile(current_user: User = Depends(get_current_active_user)):
-    """Get the profile of the currently authenticated user"""
-    return current_user
+async def get_current_user_profile(token: str = Depends(oauth2_scheme), db: AsyncSession = Depends(get_db)):
+    """
+    Get the profile of the currently authenticated user
+    
+    This endpoint returns the profile of the currently authenticated user based on their
+    JWT token. All authenticated users regardless of role can access this endpoint.
+    
+    Args:
+        token: JWT token from Authorization header
+        db: Database session
+        
+    Returns:
+        UserOut: User profile data
+        
+    Raises:
+        HTTPException: If authentication fails
+    """
+    try:
+        # Direct token decoding without role checking
+        if token.startswith('Bearer '):
+            token = token[7:]
+        
+        credentials_exception = HTTPException(
+            status_code=status.HTTP_401_UNAUTHORIZED,
+            detail="Could not validate credentials",
+            headers={"WWW-Authenticate": "Bearer"},
+        )
+        
+        try:
+            payload = jwt.decode(token, JWT_SECRET_KEY, algorithms=[ALGORITHM])
+            user_id: str = payload.get("sub")
+            if user_id is None:
+                raise credentials_exception
+        except JWTError as e:
+            logger.error(f"JWT Error in /users/me: {str(e)}")
+            raise credentials_exception
+        
+        # Get user directly from database
+        user = await db.get(User, uuid.UUID(user_id))
+        if user is None:
+            raise credentials_exception
+            
+        logger.info(f"User profile requested: {user.email}")
+        return user
+    except Exception as e:
+        logger.error(f"Error retrieving user profile: {str(e)}")
+        if isinstance(e, HTTPException):
+            raise e
+        raise HTTPException(
+            status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
+            detail="Error retrieving user profile"
+        )
 
 
 @router.get("/users/{user_id}", response_model=UserOut, summary="Get user by ID")

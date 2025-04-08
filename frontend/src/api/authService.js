@@ -46,6 +46,19 @@ axiosInstance.interceptors.request.use(
             logger.debug(`Request to ${config.url} - Adding Authorization header: Bearer ${cleanToken.substring(0, 15)}...`);
         } else {
             logger.warn(`Request to ${config.url} - No token found`);
+            // Refresh token or redirect to login if this is an authenticated endpoint
+            // This helps prevent 403 errors by redirecting to login when no token is present
+            if (!config.url.includes('/public/') && !config.url.includes('/login')) {
+                const currentPath = window.location.pathname;
+                // Only redirect if not already on login page to prevent loops
+                if (!currentPath.includes('/login')) {
+                    logger.warn('No token for authenticated endpoint - redirecting to login');
+                    // Use a slight delay to allow the current request to complete
+                    setTimeout(() => {
+                        window.location.href = '/login?redirect=' + encodeURIComponent(currentPath);
+                    }, 100);
+                }
+            }
         }
 
         // Log request details in development
@@ -200,136 +213,45 @@ export const authService = {
                 return null;
             }
             
-            // Fetch user profile
-            try {
-                console.log('Fetching current user profile...');
-                const response = await this.axiosInstance.get('/users/me');
-                logger.debug('Raw user profile response:', response.data);
-                
-                console.log('AUTH SERVICE: Raw user profile data:', JSON.stringify(response.data, null, 2));
-                
-                // Extract and normalize user data
-                let userData = {
-                    id: response.data.id,
-                    name: response.data.name || 'User',
-                    email: response.data.email,
-                    role: response.data.role || 'STUDENT', // Default role
-                    is_google_user: response.data.is_google_user,
-                    has_password: true // Assume true since user was retrieved
-                };
-                
-                // Always normalize role to uppercase for frontend consistency
-                if (userData.role) {
-                    userData.role = userData.role.toUpperCase();
-                }
-                
-                console.log('AUTH SERVICE: Normalized user data:', JSON.stringify(userData, null, 2));
-                console.log(`AUTH SERVICE: User role after normalization: "${userData.role}"`);
-                
-                // Store role in localStorage for navigation guards
-                localStorage.setItem('userRole', userData.role);
-                
-                // Cache the user data for subsequent calls within the same session
-                this._cachedUserData = userData;
-                
-                return userData;
-            } catch (apiError) {
-                logger.error('Response error from user profile endpoint:', 
-                    apiError.response?.status,
-                    apiError.response?.data);
-                
-                // If unauthorized, clear token and retry login
-                if (apiError.response?.status === 401) {
-                    logger.warn('Unauthorized access detected - token may be invalid or expired');
-                    
-                    // Clear invalid token data
-                    localStorage.removeItem('token');
-                    localStorage.removeItem('userRole');
-                    this._cachedUserData = null;
-                }
-                
-                // Try to use local storage as fallback
-                const userRole = localStorage.getItem('userRole');
-                if (userRole) {
-                    // Create a minimal user object from local storage data
-                    logger.warn('Using fallback user data from localStorage');
-                    return {
-                        role: userRole,  // Already uppercase from localStorage
-                        id: 'fallback-user',
-                        name: 'User',
-                        email: '',
-                        has_password: false,
-                        isLocalStorageFallback: true
-                    };
-                }
-                
-                return null;
-            }
+            // Get role from localStorage
+            const userRole = localStorage.getItem('userRole') || 'STUDENT';
+            
+            // Create a simple user object from localStorage data
+            const userData = {
+                id: 'local-user', // Placeholder ID
+                name: localStorage.getItem('userName') || 'User',
+                email: localStorage.getItem('userEmail') || '',
+                role: userRole.toUpperCase(),
+                is_google_user: false,
+                has_password: true
+            };
+
+            logger.debug('Created user data from localStorage:', userData);
+            
+            // Cache the user data for subsequent calls
+            this._cachedUserData = userData;
+            
+            return userData;
         } catch (error) {
             logger.error('Error getting current user:', error.message);
             return null;
         }
     },
 
-    // Check if user is authenticated
+    // Check if the user is currently authenticated
     async isAuthenticated() {
         try {
-            // Check for token existence
+            // Check if token exists in localStorage
             const token = localStorage.getItem('token');
             if (!token) {
-                logger.warn('No token found in localStorage');
+                logger.warn('No auth token found in localStorage');
                 return false;
             }
             
-            // Clean token (remove quotes if stored as JSON)
-            let cleanToken = token;
-            if (typeof cleanToken === 'string') {
-                cleanToken = cleanToken.replace(/^"|"$/g, '');
-            }
-            
-            // Add debug info about token
-            logger.debug(`Token exists: ${!!cleanToken}, Length: ${cleanToken.length}`);
-            
-            // Simple token validation (not checking expiry yet)
-            if (!cleanToken || cleanToken === 'undefined' || cleanToken === 'null') {
-                logger.warn('Invalid token value in localStorage');
-                localStorage.removeItem('token'); // Clear invalid token
-                return false;
-            }
-            
-            // Check with backend if possible
-            try {
-                // Attempt to fetch user profile as validation
-                logger.debug('Validating token by fetching user profile...');
-                const response = await this.axiosInstance.get('/users/me', {
-                    headers: {
-                        'Authorization': `Bearer ${cleanToken}`
-                    },
-                    timeout: 3000 // Fast timeout for auth check
-                });
-                
-                // If we get a successful response, the token is valid
-                if (response.status === 200) {
-                    logger.debug('Token validated successfully via API');
-                    return true;
-                }
-            } catch (apiError) {
-                logger.error('Token validation failed:', apiError.message);
-                
-                // Clear token on 401 responses
-                if (apiError.response && apiError.response.status === 401) {
-                    logger.warn('Token rejected by server, clearing from storage');
-                    localStorage.removeItem('token');
-                    return false;
-                }
-                
-                // For network errors, still consider authenticated if token exists
-                logger.warn('Token validation API error, falling back to token existence check');
-                return true; // Token exists but couldn't validate with backend
-            }
-            
-            // Fallback to token existence
+            // Just consider authenticated if token exists
+            logger.debug('Token exists in localStorage, considering authenticated');
             return true;
+            
         } catch (error) {
             logger.error('Error in isAuthenticated check:', error.message);
             return false;

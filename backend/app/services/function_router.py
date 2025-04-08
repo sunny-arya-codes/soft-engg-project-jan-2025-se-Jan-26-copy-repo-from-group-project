@@ -270,3 +270,158 @@ class FunctionRouter:
 
 # Create global function router instance
 function_router = FunctionRouter() 
+
+# Register API functions
+from app.services.api_functions import (
+    getUserProfile, getCourses, getAssignments, search_faqs,
+    web_search, generate_learning_roadmap, get_course_with_grades
+)
+
+# Setup the router with all available functions
+def setup_function_router():
+    """Register all API functions with the router"""
+    
+    # User functions
+    function_router.register_function(
+        name="getUserProfile",
+        description="Get a user's profile information",
+        handler=getUserProfile,
+        parameters={
+            "type": "object",
+            "properties": {
+                "user_id": {
+                    "type": "string",
+                    "description": "User ID to get profile for"
+                }
+            },
+            "required": ["user_id"]
+        }
+    )
+    
+    # Course functions
+    function_router.register_function(
+        name="getCourses",
+        description="Get courses for a user with optional status filter",
+        handler=getCourses,
+        parameters={
+            "type": "object",
+            "properties": {
+                "user_id": {
+                    "type": "string",
+                    "description": "User ID to get courses for"
+                },
+                "status": {
+                    "type": "string",
+                    "description": "Optional status filter (active, completed, etc.)"
+                }
+            },
+            "required": ["user_id"]
+        }
+    )
+    
+    function_router.register_function(
+        name="get_course_with_grades",
+        description="Get a course with all student grades",
+        handler=get_course_with_grades,
+        parameters={
+            "type": "object",
+            "properties": {
+                "course_id": {
+                    "type": "string",
+                    "description": "Course ID to get grades for"
+                }
+            },
+            "required": ["course_id"]
+        }
+    )
+    
+    # Assignment functions
+    function_router.register_function(
+        name="getAssignments",
+        description="Get assignments for a course with optional user filter",
+        handler=getAssignments,
+        parameters={
+            "type": "object",
+            "properties": {
+                "course_id": {
+                    "type": "string",
+                    "description": "Course ID to get assignments for"
+                },
+                "user_id": {
+                    "type": "string",
+                    "description": "Optional user ID for filtering submissions"
+                }
+            },
+            "required": ["course_id"]
+        }
+    )
+    
+    # FAQ functions
+    function_router.register_function(
+        name="search_faqs",
+        description="Search FAQs based on query text and optional category",
+        handler=search_faqs,
+        parameters={
+            "type": "object",
+            "properties": {
+                "query": {
+                    "type": "string",
+                    "description": "Search query text"
+                },
+                "category": {
+                    "type": "string",
+                    "description": "Optional category filter"
+                }
+            },
+            "required": ["query"]
+        }
+    )
+    
+    # Web search functions
+    function_router.register_function(
+        name="web_search",
+        description="Search the web for information using the provided query",
+        handler=web_search,
+        parameters={
+            "type": "object",
+            "properties": {
+                "query": {
+                    "type": "string",
+                    "description": "The search query"
+                },
+                "num_results": {
+                    "type": "integer",
+                    "description": "Maximum number of results to return",
+                    "default": 5
+                }
+            },
+            "required": ["query"]
+        }
+    )
+    
+    # Learning roadmap functions
+    function_router.register_function(
+        name="generate_learning_roadmap",
+        description="Generate a learning roadmap for a given topic and difficulty level",
+        handler=generate_learning_roadmap,
+        parameters={
+            "type": "object",
+            "properties": {
+                "topic": {
+                    "type": "string",
+                    "description": "The topic to create a roadmap for"
+                },
+                "difficulty": {
+                    "type": "string",
+                    "description": "Difficulty level (beginner, intermediate, advanced)",
+                    "default": "beginner"
+                }
+            },
+            "required": ["topic"]
+        }
+    )
+    
+    logger.info("Function router initialized with API functions")
+
+# Initialize functions when module is imported
+setup_function_router() 

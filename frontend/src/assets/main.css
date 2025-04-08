@@ -2,6 +2,7 @@
 @import './base.css';
 @import './text-colors.css';
 @import './hero-styles.css';
+@import './css/buttons.css'; /* Import button styles */
 
 /* Tailwind directives */
 @tailwind base;

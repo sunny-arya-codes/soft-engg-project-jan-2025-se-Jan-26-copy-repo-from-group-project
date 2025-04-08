@@ -8,6 +8,7 @@ from app.config import settings
 from fastapi.responses import JSONResponse, HTMLResponse, Response
 from app.services.auth_service import create_default_users
 from app.database import get_db, async_session_maker, engine
+from sqlalchemy.ext.asyncio import AsyncSession
 from fastapi.openapi.docs import get_swagger_ui_html, get_swagger_ui_oauth2_redirect_html, get_redoc_html
 from fastapi.openapi.utils import get_openapi
 from fastapi.security import OAuth2PasswordBearer
@@ -44,6 +45,14 @@ import time
 import concurrent.futures
 from starlette.middleware.gzip import GZipMiddleware
 from app.auth.context import request_context_middleware
+from jose import jwt, JWTError
+import uuid
+from app.schemas.user_schema import UserOut
+from app.config import settings
+
+# Constants for JWT validation
+JWT_SECRET_KEY = settings.JWT_SECRET
+ALGORITHM = settings.JWT_ALGORITHM
 
 # Import the modules individually instead of from app.routes
 from app.routes.auth import router as auth
@@ -54,6 +63,7 @@ from app.routes.module import router as module
 from app.routes.assignment import router as assignments
 from app.routes.faq import router as faqs
 from app.routes.lectures import router as lectures
+from app.routes.lecture_resources import router as lecture_resources  # Import new lecture resources router
 from app.routes.academic_integrity import router as academic_integrity
 from app.routes.vector_search import router as vector_search
 from app.routes.upload import router as upload
@@ -61,6 +71,9 @@ from app.routes.llm import router as llm
 from app.routes.roadmap import router as roadmap
 from app.routes.enrollments import router as enrollments  # Import new enrollments router
 from app.routes.faculty_assignments import router as faculty_assignments  # Import new faculty assignments router
+
+# Import function router setup
+from app.services.function_router import setup_function_router
 
 # Apply Pydantic v1 patch for Python 3.13 compatibility
 from app.utils.pydantic_patch import apply_patch
@@ -192,11 +205,9 @@ async def lifespan(app: FastAPI):
 async def start_monitoring_background():
     """Start monitoring service in background without blocking app startup"""
     try:
-        # Using a separate thread for potentially blocking I/O operations
-        with concurrent.futures.ThreadPoolExecutor() as executor:
-            loop = asyncio.get_event_loop()
-            await loop.run_in_executor(executor, monitoring_service.start)
-            logger.info("Monitoring service started successfully")
+        # Using a separate task for the async method
+        await monitoring_service.start_background_tasks()
+        logger.info("Monitoring service started successfully")
     except Exception as e:
         logger.error(f"Failed to start monitoring service: {e}")
 
@@ -255,6 +266,7 @@ if STATIC_DIR.exists():
 app.include_router(auth, prefix="/api/v1", tags=["auth"])
 app.include_router(users, prefix="/api/v1/users", tags=["users"])
 app.include_router(user_router, prefix="/api/v1", tags=["user"])  # Add user router for /user/profile endpoints
+app.include_router(user_routers, prefix="/api/v1", tags=["user-management"])  # Add user_routes router for /users/me endpoint
 app.include_router(healthcheck, prefix="/api/v1", tags=["system"])
 app.include_router(courses,prefix="/api/v1", tags=["courses"])
 app.include_router(course_router,prefix="/api/v1", tags=["faculty-courses"])
@@ -263,6 +275,7 @@ app.include_router(assignments, prefix="/api/v1/assignments", tags=["assignments
 app.include_router(academic_integrity, prefix="/api/v1/academic-integrity", tags=["academic-integrity"])
 app.include_router(faqs, prefix="/api/v1/faqs", tags=["faqs"])
 app.include_router(lectures, prefix="/api/v1/lectures", tags=["lectures"])
+app.include_router(lecture_resources, prefix="/api/v1", tags=["lecture-resources"])  # Add lecture resources router
 app.include_router(vector_search, prefix="/api/v1/vector", tags=["search"])
 app.include_router(upload, prefix="/api/v1/upload", tags=["files"])
 app.include_router(llm, prefix="/api/v1/llm", tags=["llm"])
@@ -277,6 +290,48 @@ from app.routes.auth import auth_callback
 app.add_api_route("/auth/callback", auth_callback, methods=["GET"], include_in_schema=True,
                  summary="Google OAuth callback",
                  description="Handles the callback from Google OAuth2 authentication")
+
+# Add a direct /users/me endpoint to bypass any router-level permissions
+@app.get("/api/v1/users/me", response_model=UserOut, summary="Get current user profile")
+async def get_current_user_direct(token: str = Depends(oauth2_scheme), db: AsyncSession = Depends(get_db)):
+    """
+    Get the profile of the currently authenticated user - direct access without router permissions
+    """
+    try:
+        # Direct token decoding without role checking
+        if token.startswith('Bearer '):
+            token = token[7:]
+        
+        credentials_exception = HTTPException(
+            status_code=status.HTTP_401_UNAUTHORIZED,
+            detail="Could not validate credentials",
+            headers={"WWW-Authenticate": "Bearer"},
+        )
+        
+        try:
+            payload = jwt.decode(token, JWT_SECRET_KEY, algorithms=[ALGORITHM])
+            user_id: str = payload.get("sub")
+            if user_id is None:
+                raise credentials_exception
+        except JWTError as e:
+            logger.error(f"JWT Error in /users/me: {str(e)}")
+            raise credentials_exception
+        
+        # Get user directly from database
+        user = await db.get(User, uuid.UUID(user_id))
+        if user is None:
+            raise credentials_exception
+            
+        logger.info(f"User profile requested (direct): {user.email}")
+        return user
+    except Exception as e:
+        logger.error(f"Error retrieving user profile (direct): {str(e)}")
+        if isinstance(e, HTTPException):
+            raise e
+        raise HTTPException(
+            status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
+            detail="Error retrieving user profile"
+        )
 
 # Monitoring endpoints
 app.include_router(monitoring.router, prefix="/api/v1/monitoring", tags=["monitoring"])
@@ -305,9 +360,29 @@ async def startup_event():
     uploads_dir = os.path.join(os.path.dirname(__file__), 'uploads')
     os.makedirs(uploads_dir, exist_ok=True)
     
-    # Initialize metadata handler
+    # Initialize metadata handler (simple class to track app metadata)
+    class MetadataHandler:
+        def __init__(self):
+            self.metadata = {
+                "app_name": settings.APP_NAME,
+                "version": settings.APP_VERSION,
+                "start_time": time.time(),
+                "environment": settings.ENV
+            }
+        
+        def get_metadata(self):
+            return self.metadata
+        
+        def update_metadata(self, key, value):
+            self.metadata[key] = value
+            return self.metadata
+    
     app.state.metadata_handler = MetadataHandler()
     logger.info("Metadata handler initialized")
+    
+    # Initialize the function router for LLM function calling
+    setup_function_router()
+    logger.info("Function router initialized for LLM service")
     
     # Initialize LLM service
     try:
@@ -336,7 +411,6 @@ async def startup_event():
         # App can still function without LLM
     
     # Additional startup code...
-    # ... existing code ...
 
 if __name__ == "__main__":
     import uvicorn

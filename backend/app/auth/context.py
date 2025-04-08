@@ -12,9 +12,10 @@ from contextvars import ContextVar
 from fastapi import Depends
 from app.services.auth_service import get_current_user as get_user_from_token
 from app.services.auth_service import oauth2_scheme
+import contextvars
 
-# Context variable to store the current request
-_request_var: ContextVar[Request] = ContextVar("request", default=None)
+# Create a context variable to store the request
+_request_var = contextvars.ContextVar("request", default=None)
 logger = logging.getLogger(__name__)
 
 def set_request(request: Request) -> None:
@@ -24,6 +25,14 @@ def set_request(request: Request) -> None:
 def get_request() -> Optional[Request]:
     """Get the current request from the context."""
     return _request_var.get()
+
+def set_request_var(request: Request) -> None:
+    """Set the request context variable (used for testing)"""
+    _request_var.set(request)
+
+def set_request_context(request: Request) -> None:
+    """Legacy alias for set_request_var (for compatibility)"""
+    set_request_var(request)
 
 async def get_current_user_from_context() -> Optional[Dict[str, Any]]:
     """

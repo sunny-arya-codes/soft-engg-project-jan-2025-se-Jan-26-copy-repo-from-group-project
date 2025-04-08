@@ -1,8 +1,11 @@
-from fastapi import APIRouter, HTTPException, Depends, Request, status
+from fastapi import APIRouter, HTTPException, Depends, Request, status, Query
+from fastapi.responses import JSONResponse
 from pydantic import BaseModel, Field
 import json
 from typing import List, Dict, Any, Optional
 import os
+import asyncio
+import logging
 
 from dotenv import load_dotenv
 load_dotenv()
@@ -15,11 +18,20 @@ from app.services.function_router import function_router
 from app.services.llm_service import create_llm_app
 from app.utils.openapi import get_openapi
 from app.routes.auth import get_current_user
-import logging
+from app.services.llm import process_query
+from app.utils.logging import get_logger
+from app.core.config import settings
+from langchain_community.embeddings import HuggingFaceEmbeddings
+from langchain_community.vectorstores import FAISS
 
-logger = logging.getLogger(__name__)
-
+# Initialize router
 router = APIRouter()
+
+# Initialize logger
+logger = get_logger(__name__)
+
+# Global chat history (this will be replaced with a proper DB-backed solution)
+chat_history = []
 
 # Schema definitions
 class FunctionCall(BaseModel):
@@ -138,613 +150,72 @@ from starlette.requests import Request as StarletteRequest
     }
 )
 async def chat(request: LLMRequest, req: Request, current_user: Optional[Dict[str, Any]] = Depends(get_current_user)):
-    """
-    Send a message to the AI and get a response with potential function calls.
-    
-    This endpoint processes the user's message using the Gemini AI model,
-    allowing it to call functions when needed to gather information.
-    
-    Args:
-        request: The validated LLM request containing the user's message
-        
-    Returns:
-        LLMResponse containing the AI's response and any function calls made
-        
-    Raises:
-        HTTPException: If input validation fails or if there's an error generating the response
-    """
     try:
-        # If direct function call is provided, execute it directly without calling the LLM
+        # Validate input
+        validator = LLMInputValidator(query=request.query)
+        sanitized_query = validator.sanitize_input()
+        
+        # Get user ID if available
+        user_id = None
+        if current_user and "id" in current_user:
+            user_id = current_user.get("id")
+            logger.info(f"Authenticated user: {user_id}")
+        else:
+            logger.info("No authenticated user found")
+        
+        # Direct function call if requested
         if request.function_call:
-            logger.info(f"Direct function call requested: {request.function_call}")
-            
+            logger.info(f"Direct function call detected: {request.function_call}")
             function_name = request.function_call.get("name")
             function_args = request.function_call.get("arguments", {})
             
-            if not function_name:
-                return LLMResponse(
-                    content="Function name is required for direct function calling",
-                    function_calls=[],
-                    function_results=[]
-                )
+            # Add user_id to function args if not present
+            if user_id and function_name in ["getUserProfile", "getCourses"]:
+                if "user_id" not in function_args:
+                    function_args["user_id"] = user_id
+                    logger.info(f"Added user_id {user_id} to function arguments")
             
+            # Execute the function
             try:
-                # Execute the function
-                user_role = current_user.get("role") if current_user else None
-                result = await function_router.execute_function(function_name, function_args, user_role)
-                
-                # Return the result
+                result = await function_router.execute_function(function_name, function_args)
                 return LLMResponse(
-                    content=f"Function {function_name} executed successfully",
-                    function_calls=[{
-                        "name": function_name,
-                        "arguments": function_args
-                    }],
-                    function_results=[{
-                        "name": function_name,
-                        "result": result
-                    }]
+                    content=f"Successfully executed function {function_name}",
+                    function_calls=[{"name": function_name, "arguments": function_args}],
+                    function_results=[{"name": function_name, "result": result}]
                 )
-            except Exception as func_error:
-                logger.error(f"Error executing function {function_name}: {str(func_error)}")
-                return LLMResponse(
-                    content=f"Error executing function {function_name}: {str(func_error)}",
-                    function_calls=[],
-                    function_results=[]
-                )
-        
-        # Use the app state to get the LLMApp
-        app = req.app
-        
-        if not hasattr(app.state, "llmapp") or not app.state.llmapp:
-            # Handle initial startup - retry with exponential backoff
-            max_init_retries = 3
-            for retry in range(max_init_retries):
-                logger.warning(f"LLMApp not initialized. Attempting to initialize (attempt {retry+1}/{max_init_retries})")
-                try:
-                    # Try to initialize LLMApp if possible
-                    from app.services.llm_service import create_llm_app
-                    await create_llm_app(app)
-                    logger.info("LLMApp initialization successful")
-                    break
-                except Exception as init_error:
-                    logger.error(f"LLMApp initialization error: {str(init_error)}")
-                    import asyncio
-                    await asyncio.sleep(1 * (2 ** retry))  # Exponential backoff
-            
-            # If still not initialized, return fallback response
-            if not hasattr(app.state, "llmapp") or not app.state.llmapp:
-                logger.error("LLMApp initialization failed, returning fallback response")
-                return LLMResponse(
-                    content="I'm sorry, I'm still starting up. Please try again in a moment."
-                )
-            
-        config = {"configurable": {"thread_id": request.id}}
-        input_message = [HumanMessage(content=request.query)]
-        
-        # Get available functions
-        tools = function_router.get_function_declarations()
-        
-        # Attempt to invoke the LLMApp with retry logic
-        max_retries = 3
-        retry_count = 0
-        last_error = None
-        
-        while retry_count < max_retries:
-            try:
-                # Invoke the LLMApp
-                response = await app.state.llmapp.ainvoke(
-                    {"messages": input_message}, 
-                    config=config
-                )
-                break  # Success, exit the retry loop
             except Exception as e:
-                last_error = e
-                logger.error(f"Error invoking LLMApp: {str(e)}")
-                retry_count += 1
-                
-                if retry_count < max_retries:
-                    # Wait before retrying
-                    import asyncio
-                    await asyncio.sleep(1 * retry_count)
-                    
-                    # Try to reinitialize the LLM app
-                    if retry_count == max_retries - 1:
-                        try:
-                            from app.services.llm_service import create_llm_app
-                            await create_llm_app(app)
-                            logger.info("Reinitialized LLM application")
-                        except Exception as reinit_error:
-                            logger.error(f"Failed to reinitialize LLM app: {str(reinit_error)}")
-        
-        # If we exhausted all retries, return a friendly error
-        if retry_count == max_retries and last_error:
-            logger.error(f"Exhausted all retries: {str(last_error)}")
-            return LLMResponse(
-                content="I'm sorry, I encountered an issue while processing your request. Please try again later."
-            )
-
-        # SPECIAL HANDLING FOR DIRECT FUNCTION CALLING
-        # ============================================
-        # If the model outputs function calls in the content rather than as structured data, 
-        # this will handle that case directly
-        
-        # Check for specific patterns in the query that might need function calls
-        direct_function_patterns = {
-            r'(?i)(show|list|get)\s+.*(courses|classes)': {
-                "function": "getCourses",
-                "args": {}
-            },
-            r'(?i)(my|show|list|get)\s+.*(assignments|homework)': {
-                "function": "getAssignments",
-                "args": {}
-            },
-            r'(?i)(search|find|get).*(faq|question).*\babout\b\s+(.+)': {
-                "function": "search_faqs",
-                "args": lambda match: {"query": match.group(3) if match.group(3) else "enrollment"}
-            }
-        }
-        
-        # Check if we should directly call a function based on the query
-        direct_function_call = None
-        for pattern, function_info in direct_function_patterns.items():
-            import re
-            match = re.search(pattern, request.query)
-            if match:
-                func_name = function_info["function"]
-                if callable(function_info["args"]):
-                    func_args = function_info["args"](match)
-                else:
-                    func_args = function_info["args"]
-                    
-                direct_function_call = {
-                    "name": func_name,
-                    "arguments": func_args
-                }
-                logger.info(f"Detected direct function call pattern: {pattern}")
-                logger.info(f"Will call function: {func_name} with args: {func_args}")
-                break
-        
-        # Process the response from the LLM
-        try:
-            # Initialize empty lists for function calls and results
-            function_calls = []
-            function_results = []
-            
-            # Extract content from the response
-            content = response.content if hasattr(response, "content") else "I couldn't generate a proper response."
-            
-            # Check if direct function call should be used
-            if direct_function_call:
-                logger.info(f"Using direct function call: {direct_function_call}")
-                function_call = FunctionCall(
-                    name=direct_function_call["name"],
-                    arguments=direct_function_call["arguments"]
+                logger.error(f"Function execution error: {str(e)}")
+                return LLMResponse(
+                    content=f"Error executing function {function_name}: {str(e)}",
+                    function_calls=[{"name": function_name, "arguments": function_args}],
+                    function_results=[]
                 )
-                function_calls.append(function_call)
-            
-            # Check if the content field contains a tool_calls JSON structure
-            # This happens when the model outputs the JSON as text instead of structured data
-            elif content and isinstance(content, str) and ("tool_calls" in content or "function_call" in content or "test(param" in content):
-                logger.info("Detected potential function call in content field - attempting to parse")
-                try:
-                    # First, try to find and extract JSON
-                    # Look for opening brace and try to parse until closing brace
-                    import re
-                    json_pattern = r'(\{[\s\S]*"(tool_calls|function_call)"[\s\S]*\})'
-                    match = re.search(json_pattern, content)
-                    
-                    if match:
-                        # Process JSON format
-                        json_str = match.group(1)
-                        logger.info(f"Extracted potential JSON: {json_str}")
-                        
-                        try:
-                            tool_calls_data = json.loads(json_str)
-                            logger.info(f"Successfully parsed JSON from content: {tool_calls_data}")
-                            
-                            # Handle different json formats
-                            if "tool_calls" in tool_calls_data:
-                                # Extract the tool calls in OpenAI format
-                                tool_calls = tool_calls_data["tool_calls"]
-                                
-                                for tool_call in tool_calls:
-                                    if "function" in tool_call:
-                                        function_info = tool_call["function"]
-                                        function_name = function_info.get("name", "")
-                                        
-                                        # Parse arguments
-                                        args_raw = function_info.get("arguments", "{}")
-                                        logger.debug(f"Raw arguments for function {function_name}: {args_raw}")
-                                        
-                                        if isinstance(args_raw, str):
-                                            try:
-                                                args_dict = json.loads(args_raw)
-                                            except json.JSONDecodeError as e:
-                                                logger.error(f"Failed to parse arguments for {function_name}: {args_raw}")
-                                                logger.error(f"JSON parse error: {str(e)}")
-                                                # Try to salvage by removing problematic characters
-                                                cleaned_args = args_raw.replace("'", "\"").strip()
-                                                try:
-                                                    args_dict = json.loads(cleaned_args)
-                                                    logger.info(f"Successfully parsed arguments after cleaning: {args_dict}")
-                                                except json.JSONDecodeError:
-                                                    logger.error(f"Failed to parse arguments even after cleaning: {cleaned_args}")
-                                                    args_dict = {}
-                                        else:
-                                            args_dict = args_raw
-                                        
-                                        function_call = FunctionCall(
-                                            name=function_name,
-                                            arguments=args_dict
-                                        )
-                                        function_calls.append(function_call)
-                            elif "function_call" in tool_calls_data:
-                                # Legacy format with single function call
-                                function_info = tool_calls_data["function_call"]
-                                function_name = function_info.get("name", "")
-                                
-                                # Parse arguments
-                                args_raw = function_info.get("arguments", "{}")
-                                if isinstance(args_raw, str):
-                                    try:
-                                        args_dict = json.loads(args_raw)
-                                    except json.JSONDecodeError as e:
-                                        logger.error(f"Failed to parse arguments for {function_name}: {args_raw}")
-                                        logger.error(f"JSON parse error: {str(e)}")
-                                        # Try to salvage by removing problematic characters
-                                        cleaned_args = args_raw.replace("'", "\"").strip()
-                                        try:
-                                            args_dict = json.loads(cleaned_args)
-                                            logger.info(f"Successfully parsed arguments after cleaning: {args_dict}")
-                                        except json.JSONDecodeError:
-                                            logger.error(f"Failed to parse arguments even after cleaning: {cleaned_args}")
-                                            args_dict = {}
-                                    except json.JSONDecodeError:
-                                            logger.error(f"Failed to parse arguments even after cleaning: {cleaned_args}")
-                                        args_dict = {}
-                                else:
-                                    args_dict = args_raw
-                                
-                                function_call = FunctionCall(
-                                    name=function_name,
-                                    arguments=args_dict
-                                )
-                                function_calls.append(function_call)
-                            
-                            # Remove the JSON from the content
-                            content = content.replace(json_str, "").strip()
-                            logger.info(f"Cleaned content after removing JSON: {content}")
-                        except json.JSONDecodeError:
-                            logger.error(f"Failed to parse JSON from content: {json_str}")
-                    
-                    # If we didn't find function calls through JSON, try to extract them from code blocks
-                    if not function_calls:
-                        # Try to extract function calls from code (e.g., test(param1='hello', param2=42))
-                        code_pattern = r'(\w+)\s*\(\s*(?:[\'"]?(\w+)[\'"]?\s*=\s*[\'"]([^\'"]+)[\'"]|[\'"]?(\w+)[\'"]?\s*=\s*(\d+))\s*(?:,\s*[\'"]?(\w+)[\'"]?\s*=\s*[\'"]?([^\'"]+)[\'"]?)*\s*\)'
-                        code_matches = re.findall(code_pattern, content)
-                        
-                        if code_matches:
-                            logger.info(f"Found potential function call in code: {code_matches}")
-                            for match in code_matches:
-                                function_name = match[0]
-                                if function_name == "test" or function_name == "testFunction":
-                                    # Extract parameters from the match
-                                    args_dict = {}
-                                    
-                                    # Process the first parameter found in the regex groups
-                                    if match[1] and match[2]:  # String parameter
-                                        args_dict[match[1]] = match[2]
-                                    elif match[3] and match[4]:  # Numeric parameter
-                                        try:
-                                            args_dict[match[3]] = int(match[4])
-                                        except ValueError:
-                                            args_dict[match[3]] = match[4]
-                                    
-                                    # Process additional parameters if available
-                                    if len(match) > 5 and match[5] and match[6]:
-                                        param_name = match[5]
-                                        param_value = match[6]
-                                        
-                                        # Try to convert to int if possible
-                                        try:
-                                            param_value = int(param_value)
-                                        except ValueError:
-                                            pass
-                                            
-                                        args_dict[param_name] = param_value
-                                    
-                                    logger.info(f"Extracted function call from code: {function_name}({args_dict})")
-                                    function_call = FunctionCall(
-                                        name=function_name,
-                                        arguments=args_dict
-                                    )
-                                    function_calls.append(function_call)
-                        
-                        # Simple pattern matching for common API functions with empty parentheses
-                        # This will match patterns like print(getCourses()) or just getCourses()
-                        if not function_calls:
-                            # First look for common print() or similar wrapping patterns
-                            print_pattern = r'print\s*\(\s*(\w+)\s*\(\s*\)\s*\)'
-                            print_matches = re.findall(print_pattern, content)
-                            
-                            if print_matches:
-                                logger.info(f"Found print-wrapped function calls: {print_matches}")
-                                for func_name in print_matches:
-                                    # Check if this is a registered function
-                                    if func_name in [f["name"] for f in function_router.get_function_declarations()]:
-                                        logger.info(f"Extracted function call from print statement: {func_name}()")
-                                        function_call = FunctionCall(
-                                            name=func_name,
-                                            arguments={}
-                                        )
-                                        function_calls.append(function_call)
-                                        
-                                        # Clean up the content by removing the print statement
-                                        content = re.sub(f'print\\s*\\(\\s*{func_name}\\s*\\(\\s*\\)\\s*\\)', '', content)
-                            
-                            # Now look for direct function calls like getCourses()
-                            direct_pattern = r'\b(\w+)\s*\(\s*\)'
-                            direct_matches = re.findall(direct_pattern, content)
-                            
-                            if direct_matches:
-                                logger.info(f"Found direct function calls: {direct_matches}")
-                                for func_name in direct_matches:
-                                    # Check if this is a registered function
-                                    if func_name in [f["name"] for f in function_router.get_function_declarations()]:
-                                        logger.info(f"Extracted direct function call: {func_name}()")
-                                        function_call = FunctionCall(
-                                            name=func_name,
-                                            arguments={}
-                                        )
-                                        function_calls.append(function_call)
-                                        
-                                        # Clean up the content by removing the function call
-                                        content = re.sub(f'\\b{func_name}\\s*\\(\\s*\\)', '', content)
-                            
-                            # Clean up the content after removing function calls
-                            content = content.strip()
-                            if not content:
-                                content = "I've processed your request."
-                except Exception as json_extract_error:
-                    logger.error(f"Error extracting function call from content: {str(json_extract_error)}")
-                    logger.error(f"Content was: {content}")
-            
-            # Check for standard function calls in additional_kwargs
-            if not function_calls and hasattr(response, "additional_kwargs"):
-                # Log the entire additional_kwargs for debugging
-                logger.info(f"LLM response additional_kwargs: {json.dumps(response.additional_kwargs, default=str)}")
-                
-                # Handle multiple function call formats - first check for function_calls
-                if "function_calls" in response.additional_kwargs:
-                    # This is our standardized format from call_llm
-                    func_calls = response.additional_kwargs.get("function_calls", [])
-                    logger.info(f"Found standardized function_calls: {func_calls}")
-                    
-                    for func_call in func_calls:
-                        # Handle different formats
-                        if isinstance(func_call, dict):
-                            # Format 1: {type: 'function', function: {name, arguments}}
-                            if 'type' in func_call and func_call['type'] == 'function' and 'function' in func_call:
-                                logger.info(f"Found type:function format: {func_call}")
-                                function_info = func_call['function']
-                                function_name = function_info.get('name', '')
-                                args_raw = function_info.get('arguments', {})
-                                
-                                # Process arguments
-                                if isinstance(args_raw, str):
-                                    try:
-                                        args_dict = json.loads(args_raw)
-                                    except json.JSONDecodeError as e:
-                                        logger.error(f"Failed to parse arguments for {function_name}: {args_raw}")
-                                        logger.error(f"JSON parse error: {str(e)}")
-                                        # Try to salvage by removing problematic characters
-                                        cleaned_args = args_raw.replace("'", "\"").strip()
-                                        try:
-                                            args_dict = json.loads(cleaned_args)
-                                            logger.info(f"Successfully parsed arguments after cleaning: {args_dict}")
-                                        except json.JSONDecodeError:
-                                            logger.error(f"Failed to parse arguments even after cleaning: {cleaned_args}")
-                                            args_dict = {}
-                                else:
-                                    args_dict = args_raw
-                                
-                                function_call = FunctionCall(
-                                    name=function_name,
-                                    arguments=args_dict
-                                )
-                                function_calls.append(function_call)
-                                logger.info(f"Added function call from type:function format: {function_name}")
-                            
-                            # Format 2: Standard {name, arguments} format
-                            else:
-                                function_name = func_call.get("name", "")
-                                args_raw = func_call.get("arguments", {})
-                                
-                                if isinstance(args_raw, str):
-                                    try:
-                                        args_dict = json.loads(args_raw)
-                                    except json.JSONDecodeError as e:
-                                        logger.error(f"Failed to parse arguments: {args_raw}")
-                                        logger.error(f"JSON parse error: {str(e)}")
-                                        # Try to salvage by removing problematic characters
-                                        cleaned_args = args_raw.replace("'", "\"").strip()
-                                        try:
-                                            args_dict = json.loads(cleaned_args)
-                                            logger.info(f"Successfully parsed arguments after cleaning: {args_dict}")
-                                        except json.JSONDecodeError:
-                                            logger.error(f"Failed to parse arguments even after cleaning: {cleaned_args}")
-                                            args_dict = {}
-                                else:
-                                    args_dict = args_raw
-                                
-                        function_call = FunctionCall(
-                                    name=function_name,
-                                    arguments=args_dict
-                        )
-                        function_calls.append(function_call)
-                        
-                        # This else was misplaced and causing syntax error
-                        if not isinstance(func_call, dict):
-                            logger.warning(f"Unexpected function call format: {func_call}")
-                
-                # Next check for OpenAI format tool_calls
-                elif "tool_calls" in response.additional_kwargs:
-                    tool_calls = response.additional_kwargs.get("tool_calls", [])
-                    logger.info(f"Found OpenAI-format tool_calls in additional_kwargs: {tool_calls}")
-                    
-                    for tool_call in tool_calls:
-                        if isinstance(tool_call, dict):
-                            # Check for Google/OpenAI format with function inside tool_call
-                            if "function" in tool_call:
-                                function_info = tool_call["function"]
-                                function_name = function_info.get("name", "")
-                                
-                                # Parse arguments - could be string or dict
-                                args_raw = function_info.get("arguments", "{}")
-                                logger.debug(f"Raw arguments for function {function_name}: {args_raw} (type: {type(args_raw)})")
-                                
-                                if isinstance(args_raw, str):
-                                    try:
-                                        args_dict = json.loads(args_raw)
-                                    except json.JSONDecodeError as e:
-                                        logger.error(f"Failed to parse arguments for {function_name}: {args_raw}")
-                                        logger.error(f"JSON parse error: {str(e)}")
-                                        # Try to salvage by removing problematic characters
-                                        cleaned_args = args_raw.replace("'", "\"").strip()
-                                        try:
-                                            args_dict = json.loads(cleaned_args)
-                                            logger.info(f"Successfully parsed arguments after cleaning: {args_dict}")
-                                        except json.JSONDecodeError:
-                                            logger.error(f"Failed to parse arguments even after cleaning: {cleaned_args}")
-                                            args_dict = {}
-                                    except json.JSONDecodeError:
-                                            logger.error(f"Failed to parse arguments even after cleaning: {cleaned_args}")
-                                        args_dict = {}
-                                else:
-                                    args_dict = args_raw
-                                
-                                function_call = FunctionCall(
-                                    name=function_name,
-                                    arguments=args_dict
-                                )
-                                function_calls.append(function_call)
-                                
-                                # Add the raw tool call to the response for client-side use
-                                if "raw_tool_calls" not in response.additional_kwargs:
-                                    response.additional_kwargs["raw_tool_calls"] = []
-                                response.additional_kwargs["raw_tool_calls"].append(tool_call)
-                
-                # Finally check for single function_call (legacy format)
-                elif "function_call" in response.additional_kwargs:
-                    function_call_info = response.additional_kwargs.get("function_call", {})
-                    logger.info(f"Found legacy function_call format: {function_call_info}")
-                    
-                    function_name = function_call_info.get("name", "")
-                    args_raw = function_call_info.get("arguments", "{}")
-                    
-                    # Parse arguments - could be string or dict
-                    if isinstance(args_raw, str):
-                        try:
-                            args_dict = json.loads(args_raw)
-                        except json.JSONDecodeError as e:
-                            logger.error(f"Failed to parse arguments for {function_name}: {args_raw}")
-                            logger.error(f"JSON parse error: {str(e)}")
-                            # Try to salvage by removing problematic characters
-                            cleaned_args = args_raw.replace("'", "\"").strip()
-                            try:
-                                args_dict = json.loads(cleaned_args)
-                                logger.info(f"Successfully parsed arguments after cleaning: {args_dict}")
-                            except json.JSONDecodeError:
-                                logger.error(f"Failed to parse arguments even after cleaning: {cleaned_args}")
-                                args_dict = {}
-                    else:
-                        args_dict = args_raw
-                    
-                    function_call = FunctionCall(
-                        name=function_name,
-                        arguments=args_dict
-                    )
-                    function_calls.append(function_call)
-            
-            # Also check raw attribute format if available
-            elif not function_calls and hasattr(response, "tool_calls") and response.tool_calls:
-                logger.info(f"Found direct tool_calls attribute: {response.tool_calls}")
-                for tool_call in response.tool_calls:
-                    if "name" in tool_call:
-                        function_call = FunctionCall(
-                            name=tool_call.get("name", ""),
-                            arguments=tool_call.get("args", {})
-                    )
-                    function_calls.append(function_call)
-            
-            # If we have function calls, execute them
-            if function_calls:
-                logger.info(f"Executing {len(function_calls)} function calls")
-                
-                # Get user role for authorization
-                user_role = current_user.get("role") if current_user else "anonymous"
-                
-                for function_call in function_calls:
-                    try:
-                        # Log the function call attempt
-                        logger.info(f"Executing function: {function_call.name} with args: {function_call.arguments}")
-                        
-                        # Execute the function
-                        result = await function_router.execute_function(
-                            function_call.name,
-                            function_call.arguments,
-                            user_role
-                        )
-                        
-                        # Add the result
-                        function_results.append(
-                            FunctionResult(
-                                name=function_call.name,
-                                result=result
-                            )
-                        )
-                        logger.info(f"Function {function_call.name} executed successfully")
-                        
-                        # If we used direct function pattern matching, ensure content is appropriate
-                        if direct_function_call and function_call.name == direct_function_call["name"]:
-                            content = f"Here are the results:"
-                    except Exception as e:
-                        logger.error(f"Error executing function {function_call.name}: {str(e)}")
-                        import traceback
-                        logger.error(traceback.format_exc())
-                        function_results.append(
-                            FunctionResult(
-                                name=function_call.name,
-                                result={"error": str(e)}
-                            )
-                        )
-            
-            # Return the response with function calls and results
-            return LLMResponse(
-                content=content,
-                function_calls=[func_call.dict() for func_call in function_calls] if function_calls else None,
-                function_results=[func_result.dict() for func_result in function_results] if function_results else None,
-                raw_tool_calls=response.additional_kwargs.get("raw_tool_calls") if hasattr(response, "additional_kwargs") and "raw_tool_calls" in response.additional_kwargs else None
-            )
-            
-        except Exception as process_error:
-            logger.error(f"Error processing LLM response: {str(process_error)}")
-            import traceback
-            logger.error(traceback.format_exc())
-            raise HTTPException(
-                status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
-                detail=f"Error processing response: {str(process_error)}"
-            )
+        
+        # Process through LLM if not a direct function call
+        llm_result = await process_query(sanitized_query, user_id)
+        
+        content = llm_result.get("response", "")
+        function_calls = llm_result.get("function_calls", [])
+        function_results = llm_result.get("function_results", [])
+        
+        # Log the function calls for debugging
+        if function_calls:
+            logger.info(f"LLM requested {len(function_calls)} function calls")
+            for fc in function_calls:
+                logger.info(f"Function call: {fc.get('name')} with args: {fc.get('arguments')}")
+        
+        # Return the response
+        return LLMResponse(
+            content=content,
+            function_calls=function_calls,
+            function_results=function_results
+        )
     
     except Exception as e:
-        logger.error(f"Error in chat endpoint: {str(e)}")
+        logger.error(f"Error in chat endpoint: {e}")
         import traceback
         logger.error(traceback.format_exc())
-        raise HTTPException(
-            status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
-            detail=f"Server error: {str(e)}"
-        )
+        raise HTTPException(status_code=500, detail=f"Error processing request: {str(e)}")
 
 @router.get("/chat")
 async def get_chat_history(id: str, req: Request):
@@ -911,3 +382,108 @@ async def get_openapi_docs(req: Request, current_user: Optional[Dict[str, Any]] 
             status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
             detail=f"Error generating API documentation: {str(e)}"
         )
+
+@router.post("/execute-function", 
+    summary="Directly execute a function",
+    description="Execute a function with the provided arguments directly, bypassing the LLM",
+    response_model=LLMResponse,
+    responses={
+        200: {"description": "Function executed successfully"},
+        400: {"description": "Invalid function name or arguments"},
+        500: {"description": "Server error during function execution"}
+    }
+)
+async def execute_function(
+    function_name: str = Query(..., description="Name of the function to execute"),
+    req: Request = None,
+    current_user: Optional[Dict[str, Any]] = Depends(get_current_user)  # Require authentication
+):
+    """
+    Directly execute a function with the provided arguments.
+    """
+    try:
+        # Get request body for arguments
+        body = await req.json() if req.method == "POST" and req.headers.get("content-type") == "application/json" else {}
+        
+        # Get user ID if available
+        user_id = None
+        if current_user and "id" in current_user:
+            user_id = current_user.get("id")
+            logger.info(f"Authenticated user: {user_id}")
+        
+        # Add user_id to function args if needed and not already provided
+        function_args = body.get("arguments", {})
+        if user_id and function_name in ["getUserProfile", "getCourses"]:
+            if "user_id" not in function_args:
+                function_args["user_id"] = user_id
+                logger.info(f"Added user_id {user_id} to function arguments")
+        
+        # For debugging purposes, if no user_id is available but required, use a test ID
+        if not user_id and function_name in ["getUserProfile", "getCourses"]:
+            if "user_id" not in function_args:
+                # Only use hardcoded ID in development
+                if settings.ENV == "development":
+                    function_args["user_id"] = "05f83842-96d1-4ca0-9101-7c39c74ac5cd"
+                    logger.warning(f"Using hardcoded user_id for testing in development environment")
+                else:
+                    return JSONResponse(
+                        status_code=401,
+                        content={"error": "Authentication required for this function"}
+                    )
+        
+        logger.info(f"Executing function {function_name} with args: {function_args}")
+        
+        # Execute the function
+        result = await function_router.execute_function(function_name, function_args)
+        
+        return LLMResponse(
+            content=f"Successfully executed function {function_name}",
+            function_calls=[{"name": function_name, "arguments": function_args}],
+            function_results=[{"name": function_name, "result": result}]
+        )
+    
+    except Exception as e:
+        logger.error(f"Error executing function: {str(e)}")
+        import traceback
+        logger.error(traceback.format_exc())
+        raise HTTPException(status_code=500, detail=f"Error executing function: {str(e)}")
+
+# Simple endpoint for getting courses directly
+@router.get("/get-courses", 
+    summary="Get courses for the current user",
+    description="Convenience endpoint to get courses directly without going through the LLM",
+    responses={
+        200: {"description": "Courses retrieved successfully"},
+        401: {"description": "Authentication required"},
+        500: {"description": "Server error"}
+    }
+)
+async def get_user_courses(
+    status: Optional[str] = None,
+    current_user: Dict[str, Any] = Depends(get_current_user)
+):
+    """
+    Get courses for the current user with optional status filter.
+    This is a convenience endpoint for testing.
+    """
+    try:
+        user_id = current_user.get("id")
+        if not user_id:
+            raise HTTPException(status_code=401, detail="Authentication required")
+        
+        logger.info(f"Getting courses for user {user_id} with status filter: {status}")
+        
+        # Import the function directly to avoid circular imports
+        from app.services.api_functions import getCourses
+        
+        # Call the function with the user_id
+        args = {"user_id": user_id}
+        if status:
+            args["status"] = status
+            
+        result = await getCourses(**args)
+        return result
+    
+    except Exception as e:
+        logger.error(f"Error getting courses: {str(e)}")
+        raise HTTPException(status_code=500, detail=f"Error getting courses: {str(e)}")
