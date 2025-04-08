@@ -24,6 +24,7 @@ import re  # For password validation regex
 from app.config import settings
 import json
 import asyncio
+from app.services.learning_insights_service import learning_insights_service  # Import the service
 
 # Configure logger for this module
 logger = logging.getLogger(__name__)
@@ -739,6 +740,41 @@ async def batch_user_operations(
                 f"Errors: {len(results['errors'])}")
     
     return results
+
+
+@router.get("/user/learning-insights", 
+    summary="Get AI-generated learning insights", 
+    description="Get personalized learning insights based on user activity and content engagement"
+)
+async def get_learning_insights(
+    current_user: User = Depends(get_current_active_user),
+    db: AsyncSession = Depends(get_db)
+):
+    """
+    Get AI-generated learning insights for the current user.
+    
+    This endpoint analyzes user activity data including course progress, lecture engagement,
+    quiz performance, and study patterns to provide personalized recommendations
+    for improving learning outcomes.
+    
+    Args:
+        current_user: The authenticated user
+        db: Database session
+        
+    Returns:
+        dict: Personalized learning insights
+    """
+    try:
+        # Pass the database session to the service for efficient data retrieval
+        insights = await learning_insights_service.get_learning_insights(current_user, db)
+        return insights
+        
+    except Exception as e:
+        logger.error(f"Error generating learning insights: {str(e)}")
+        raise HTTPException(
+            status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
+            detail=f"Error generating learning insights: {str(e)}"
+        )
 
 
 # Initialize admin user if doesn't exist

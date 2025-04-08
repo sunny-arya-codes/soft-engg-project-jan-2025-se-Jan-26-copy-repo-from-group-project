@@ -107,6 +107,8 @@ class User(Base):
     bookmarks = relationship("BookmarkedMaterials", back_populates="user")
     chat_sessions = relationship("ChatSession", back_populates="user")
     roles = relationship("Role", secondary=user_roles, back_populates="users")
+    lecture_progress = relationship("LectureProgress", back_populates="user")
+    quiz_attempts = relationship("QuizAttempt", back_populates="user")
 
     # Add indexes for frequently queried fields
     __table_args__ = (

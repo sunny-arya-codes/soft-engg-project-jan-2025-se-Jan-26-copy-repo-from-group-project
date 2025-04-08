@@ -4,6 +4,7 @@ import FetchFunction from '../utils/FetchFunction';
 import router from '../router/index';
 import { User } from '@/models/User';
 import { APP_BASE_URL, ROLE } from '@/AppConstants/globalConstants';
+import rolePaths from '@/AppConstants/rolePaths';
 import { authService } from '@/api/authService';
 
 // For development only - remove in production
@@ -117,7 +118,12 @@ export default defineStore('auth', () => {
                 
                 // Set user role if available
                 if (response.user && response.user.role) {
+                    console.log(`AUTH STORE: Setting role from login response user object: "${response.user.role}"`);
+                    console.log(`AUTH STORE: Current roles - FACULTY="${ROLE.FACULTY}", SUPPORT="${ROLE.SUPPORT}", STUDENT="${ROLE.STUDENT}"`);
                     setUserRole(response.user.role);
+                    console.log(`AUTH STORE: Role after setting: "${userRole.value}"`);
+                } else {
+                    console.warn('AUTH STORE: No role found in login response user object');
                 }
                 
                 // Navigate to appropriate dashboard
@@ -139,19 +145,19 @@ export default defineStore('auth', () => {
         switch (userRole.value) {
             case ROLE.STUDENT:  // "STUDENT"
                 console.log("Redirecting to student dashboard");
-                router.push('/user/dashboard');
+                router.push(rolePaths.STUDENT.dashboard);
                 break;
             case ROLE.FACULTY:  // "FACULTY"
                 console.log("Redirecting to faculty dashboard");
-                router.push('/faculty/dashboard');
+                router.push(rolePaths.FACULTY.dashboard);
                 break;
             case ROLE.SUPPORT:  // "SUPPORT"
                 console.log("Redirecting to support dashboard");
-                router.push('/support/dashboard');
+                router.push(rolePaths.SUPPORT.dashboard);
                 break;
             default:
                 console.warn(`Unknown role: ${userRole.value}, defaulting to student dashboard`);
-                router.push('/user/dashboard');
+                router.push(rolePaths.STUDENT.dashboard);
         }
     }
 
@@ -203,17 +209,28 @@ export default defineStore('auth', () => {
             const normalizedRole = role.toUpperCase();
             
             // Log original and normalized role for debugging
-            console.log(`Setting user role - Original: ${role}, Normalized: ${normalizedRole}`);
+            console.log(`Setting user role - Original: "${role}", Normalized: "${normalizedRole}"`);
+            console.log(`ROLE constants: STUDENT="${ROLE.STUDENT}", FACULTY="${ROLE.FACULTY}", SUPPORT="${ROLE.SUPPORT}"`);
             
             // Validate against known roles
             if (Object.values(ROLE).includes(normalizedRole)) {
                 userRole.value = normalizedRole;
                 localStorage.setItem('userRole', normalizedRole);
-                console.log(`User role set to: ${normalizedRole}`);
+                console.log(`User role set to: "${normalizedRole}"`);
             } else {
-                console.warn(`Invalid role: ${role}, defaulting to STUDENT`);
-                userRole.value = ROLE.STUDENT;
-                localStorage.setItem('userRole', ROLE.STUDENT);
+                // Try a case-insensitive match as fallback
+                const matchingRole = Object.values(ROLE).find(r => 
+                    r.toLowerCase() === role.toLowerCase());
+                
+                if (matchingRole) {
+                    console.log(`Found matching role "${matchingRole}" through case-insensitive match`);
+                    userRole.value = matchingRole;
+                    localStorage.setItem('userRole', matchingRole);
+                } else {
+                    console.warn(`Invalid role: "${role}", defaulting to STUDENT`);
+                    userRole.value = ROLE.STUDENT;
+                    localStorage.setItem('userRole', ROLE.STUDENT);
+                }
             }
         } else {
             console.warn(`Invalid role value: ${role}, defaulting to STUDENT`);

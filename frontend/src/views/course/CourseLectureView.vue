@@ -153,10 +153,10 @@
           <div class="flex-1 overflow-auto">
             <!-- Lecture Content Tab -->
             <div v-if="activeTab === 'content'" class="p-4">
-              <CourseLectureContent 
-                v-if="currentLecture" 
-                :lecture="currentLecture"
-              />
+            <CourseLectureContent 
+              v-if="currentLecture" 
+              :lecture="currentLecture"
+            />
             </div>
 
             <!-- Resources Tab -->

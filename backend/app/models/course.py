@@ -84,6 +84,7 @@ class Course(Base):
     modules = relationship("Module", back_populates="course", cascade="all, delete-orphan")
     enrollments = relationship("CourseEnrollment", back_populates="course")
     assignments = relationship("Assignment", back_populates="course")
+    quizzes = relationship("Quiz", back_populates="course", cascade="all, delete-orphan")
 
     # Add indexes for frequently queried fields
     __table_args__ = (
@@ -334,6 +335,39 @@ class LectureContentDoc(Base):
             "content_desc": self.content_desc,
         }
 
+# Lecture Progress Model - Tracks user progress through lectures
+class LectureProgress(Base):
+    __tablename__ = "lecture_progress"
+
+    id = Column(Integer, primary_key=True, autoincrement=True)
+    user_id = Column(UUID, ForeignKey("users.id", ondelete="CASCADE"), nullable=False)
+    lecture_id = Column(Integer, ForeignKey("lecture.id", ondelete="CASCADE"), nullable=False)
+    completion_status = Column(Float, default=0.0)  # 0.0 to 1.0 for progress percentage
+    time_spent = Column(Integer, default=0)  # Time spent in seconds
+    last_accessed = Column(DateTime, default=datetime.utcnow)
+    notes = Column(Text, nullable=True)  # Optional user notes for the lecture
+    
+    # Relationships
+    user = relationship("User", back_populates="lecture_progress")
+    lecture = relationship("Lecture")
+    
+    # Add indexes for frequently queried fields
+    __table_args__ = (
+        Index('idx_lecture_progress_user', 'user_id'),
+        Index('idx_lecture_progress_lecture', 'lecture_id'),
+    )
+    
+    def to_dict(self):
+        """Converts the LectureProgress object to a dictionary"""
+        return {
+            "id": self.id,
+            "user_id": str(self.user_id),
+            "lecture_id": self.lecture_id,
+            "completion_status": self.completion_status,
+            "time_spent": self.time_spent,
+            "last_accessed": self.last_accessed.isoformat() if self.last_accessed else None,
+            "notes": self.notes
+        }
 
 class UserRecommendedCourses(Base):
     __tablename__ = "user_recommended_courses"

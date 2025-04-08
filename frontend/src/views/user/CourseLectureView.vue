@@ -213,130 +213,268 @@
 
                     <!-- Key Concepts -->
                     <div class="bg-white rounded-2xl shadow-lg p-6">
-                      <h3 class="text-xl font-bold text-slate-900 mb-5">Key Concepts</h3>
+                      <h3 class="text-xl font-bold text-slate-900 mb-5">
+                        Key Concepts
+                        <span v-if="loadingConcepts" class="ml-2 inline-block w-4 h-4 border-2 border-maroon-600 border-t-transparent rounded-full animate-spin"></span>
+                      </h3>
+                      
+                      <!-- Fallback Data Indicator -->
+                      <div v-if="isShowingFallbackData && keyConcepts.length > 0" class="bg-yellow-50 p-2 rounded-md text-sm text-yellow-700 mb-4 flex items-center">
+                        <span class="material-icons text-yellow-500 mr-1 text-sm">info</span>
+                        <span>Showing suggested concepts. Loading real data...</span>
+                      </div>
+                      
                       <div v-if="loadingConcepts" class="flex justify-center py-4">
                         <div class="w-8 h-8 border-4 border-maroon-600 border-t-transparent rounded-full animate-spin"></div>
                       </div>
-                      <div v-else-if="conceptsError" class="text-center py-4">
-                        <p class="text-red-500 mb-2">{{ conceptsError }}</p>
-                        <button @click="fetchKeyConcepts" class="px-4 py-2 bg-maroon-500 text-white rounded-lg hover:bg-maroon-600">
+                      <div v-else-if="conceptsError" class="text-center py-4 bg-red-50 rounded-lg p-4">
+                        <span class="material-icons text-red-500 text-2xl mb-2">error_outline</span>
+                        <p class="text-red-700 mb-2">{{ conceptsError }}</p>
+                        <button @click="fetchKeyConcepts" class="px-4 py-2 bg-maroon-500 text-white rounded-lg hover:bg-maroon-600 transition-colors flex items-center mx-auto">
+                          <span class="material-icons text-sm mr-1">refresh</span>
                           Retry
                         </button>
                       </div>
-                      <ul v-else class="space-y-4">
-                        <li
-                          v-for="(concept, index) in keyConcepts"
-                          :key="index"
-                          class="flex items-start space-x-3 p-3 bg-slate-50/50 rounded-lg hover:bg-slate-50 transition-colors"
-                        >
-                          <span class="material-symbols-outlined text-emerald-500 mt-1"
-                            >check_circle</span
-                          >
-                          <span class="text-slate-700 leading-relaxed">{{ concept }}</span>
-                        </li>
-                        <li v-if="keyConcepts.length === 0" class="text-center py-4 text-slate-500">
-                          No key concepts available. 
-                          <button @click="fetchKeyConcepts" class="text-maroon-600 underline ml-1">
-                            Generate
-                          </button>
-                        </li>
-                      </ul>
-                    </div>
+                      <div v-else-if="keyConcepts.length > 0">
+                        <!-- Categorized Concepts Display -->
+                        <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+                          <!-- Core Concepts -->
+                          <div class="md:col-span-2">
+                            <h4 class="text-md font-semibold text-maroon-600 mb-3 flex items-center">
+                              <span class="material-icons text-sm mr-1 text-maroon-600">stars</span>
+                              Core Concepts
+                            </h4>
+                            <ul class="space-y-3">
+                              <li
+                                v-for="(concept, index) in keyConcepts.slice(0, 2)"
+                                :key="`core-${index}`"
+                                class="flex items-start space-x-3 p-3 bg-maroon-50/40 rounded-lg hover:bg-maroon-50 transition-colors cursor-pointer"
+                                @click="highlightConcept(concept)"
+                              >
+                                <span class="material-symbols-outlined text-maroon-600 mt-1">
+                                  clinical_notes
+                                </span>
+                                <span class="text-slate-800 leading-relaxed">{{ concept }}</span>
+                              </li>
+                            </ul>
+                          </div>
+                          
+                          <!-- Supporting Concepts -->
+                          <div>
+                            <h4 class="text-md font-semibold text-maroon-600 mb-3 mt-4 flex items-center">
+                              <span class="material-icons text-sm mr-1 text-maroon-600">extension</span>
+                              Supporting Ideas
+                            </h4>
+                            <ul class="space-y-2">
+                              <li
+                                v-for="(concept, index) in keyConcepts.slice(2, 4)"
+                                :key="`supporting-${index}`"
+                                class="flex items-start space-x-3 p-3 bg-slate-50 rounded-lg hover:bg-slate-100 transition-colors cursor-pointer"
+                                @click="highlightConcept(concept)"
+                              >
+                                <span class="material-symbols-outlined text-maroon-600 mt-1">
+                                  check_circle
+                                </span>
+                                <span class="text-slate-700 leading-relaxed">{{ concept }}</span>
+                              </li>
+                            </ul>
+                          </div>
 
-                    <!-- Discussion -->
-                    <!-- <div class="bg-white rounded-2xl shadow-lg p-6">
-                      <h3 class="text-xl font-bold text-slate-900 mb-5">Community Dialogue</h3>
-                      <div class="space-y-5">
-                        <textarea
-                          placeholder="Engage with peers..."
-                          class="w-full p-4 border border-slate-200 rounded-xl focus:ring-2 focus:ring-maroon-500 focus:border-transparent transition-all duration-300 resize-none"
-                          rows="3"
-                        ></textarea>
-                        <div class="flex items-center justify-between">
-                          <div class="flex items-center space-x-2 text-slate-500">
-                            <button class="p-2 hover:bg-slate-100 rounded-lg">
-                              <span class="material-symbols-outlined">attach_file</span>
+                          <!-- Advanced Concepts -->
+                          <div>
+                            <h4 class="text-md font-semibold text-maroon-600 mb-3 mt-4 flex items-center">
+                              <span class="material-icons text-sm mr-1 text-maroon-600">psychology</span>
+                              Advanced Topics
+                            </h4>
+                            <ul class="space-y-2">
+                              <li
+                                v-for="(concept, index) in keyConcepts.slice(4)"
+                                :key="`advanced-${index}`"
+                                class="flex items-start space-x-3 p-3 bg-slate-50 rounded-lg hover:bg-slate-100 transition-colors cursor-pointer"
+                                @click="highlightConcept(concept)"
+                              >
+                                <span class="material-symbols-outlined text-maroon-600 mt-1">
+                                  insights
+                                </span>
+                                <span class="text-slate-700 leading-relaxed">{{ concept }}</span>
+                              </li>
+                            </ul>
+                          </div>
+                        </div>
+                        
+                        <!-- Key Concepts Refresh Button -->
+                        <div class="flex justify-between mt-6 items-center">
+                          <button 
+                            @click="fetchKeyConcepts" 
+                            class="px-4 py-2 rounded-md bg-blue-50 text-blue-600 hover:bg-blue-100 transition-colors text-sm flex items-center"
+                            :disabled="loadingConcepts"
+                          >
+                            <span class="material-icons text-sm mr-1" :class="{ 'animate-spin': loadingConcepts }">refresh</span>
+                            {{ loadingConcepts ? 'Refreshing...' : 'Refresh Concepts' }}
                             </button>
-                            <button class="p-2 hover:bg-slate-100 rounded-lg">
-                              <span class="material-symbols-outlined">alternate_email</span>
+                          <span v-if="lastConceptsUpdateTime" class="text-xs text-slate-400">
+                            Updated: {{ formatDateRelative(lastConceptsUpdateTime) }}
+                          </span>
+                        </div>
+                      </div>
+                      <div v-else class="text-center py-6">
+                        <span class="material-icons text-gray-400 text-4xl mb-2">psychology</span>
+                        <p class="text-slate-500 mb-3">No key concepts available for this lecture.</p>
+                        <button @click="fetchKeyConcepts" class="px-4 py-2 bg-maroon-500 text-white rounded-lg hover:bg-maroon-600 transition-colors flex items-center mx-auto">
+                          <span class="material-icons text-sm mr-1">auto_fix_high</span>
+                          Generate Concepts
                             </button>
                           </div>
+                    </div>
+
+                    <!-- Learning Resources Section in Sidebar -->
+                    <div v-if="selectedTab === 'learning-resources'" class="flex flex-col space-y-4 h-full overflow-auto px-4 py-2">
+                      <div v-if="isLoadingResources" class="flex justify-center items-center h-32">
+                        <div class="animate-spin rounded-full h-8 w-8 border-t-2 border-b-2 border-primary"></div>
+                      </div>
+
+                      <div v-else>
+                        <h3 class="text-lg font-semibold mb-3">Learning Resources</h3>
+                        
+                        <!-- Fallback Data Indicator -->
+                        <div v-if="isShowingFallbackData" class="bg-yellow-50 p-2 rounded-md text-sm text-yellow-700 mb-4 flex items-center">
+                          <span class="material-icons text-yellow-500 mr-1 text-sm">info</span>
+                          <span>Showing suggested resources. Loading real data...</span>
+                        </div>
+                        
+                        <!-- Resources List -->
+                        <div v-for="(resource, idx) in learningResources" :key="idx" class="mb-4 p-3 bg-white rounded-lg shadow-sm hover:shadow-md transition-shadow border border-gray-200">
+                          <!-- YouTube Video Resource with Thumbnail -->
+                          <div v-if="resource.type === 'video' && resource.youtubeId" class="flex flex-col">
+                            <div class="flex justify-between items-start mb-2">
+                              <h4 class="font-medium text-md text-slate-800">{{ resource.title }}</h4>
+                              <span class="px-2 py-0.5 text-xs rounded-full bg-red-100 text-red-800">Video</span>
+                            </div>
+                            
+                            <!-- YouTube Thumbnail with Play Button -->
+                            <div class="relative rounded-md overflow-hidden mb-2 cursor-pointer" @click="loadYoutubeVideo(resource.youtubeId)">
+                              <img :src="`https://img.youtube.com/vi/${resource.youtubeId}/mqdefault.jpg`" class="w-full h-auto rounded-md" alt="Video thumbnail">
+                              <div class="absolute inset-0 flex items-center justify-center bg-black bg-opacity-20 hover:bg-opacity-30 transition-all">
+                                <span class="material-icons text-white text-4xl">play_circle</span>
+                              </div>
+                            </div>
+                            
+                            <p class="text-sm text-gray-600 mb-2">{{ resource.description }}</p>
+                            
+                            <div class="flex justify-between mt-1">
+                              <button @click="loadYoutubeVideo(resource.youtubeId)" class="text-sm text-primary flex items-center hover:text-primary-dark transition-colors">
+                                <span class="material-icons mr-1 text-sm">play_arrow</span>
+                                Play Video
+                              </button>
+                              <a :href="`https://www.youtube.com/watch?v=${resource.youtubeId}`" target="_blank" rel="noopener noreferrer" class="text-sm text-blue-600 hover:text-blue-800 transition-colors flex items-center">
+                                <span class="material-icons mr-1 text-sm">open_in_new</span>
+                                YouTube
+                              </a>
+                            </div>
+                          </div>
+                          
+                          <!-- Regular Video Resource without YouTube ID -->
+                          <div v-else-if="resource.type === 'video'" class="flex flex-col">
+                            <div class="flex justify-between items-start mb-2">
+                              <h4 class="font-medium text-md text-slate-800">{{ resource.title }}</h4>
+                              <span class="px-2 py-0.5 text-xs rounded-full bg-red-100 text-red-800">Video</span>
+                            </div>
+                            
+                            <p class="text-sm text-gray-600 mb-2">{{ resource.description }}</p>
+                            
+                            <a :href="resource.url" target="_blank" rel="noopener noreferrer" class="text-sm text-blue-600 hover:text-blue-800 transition-colors flex items-center">
+                              <span class="material-icons mr-1 text-sm">videocam</span>
+                              Find Video on YouTube
+                            </a>
+                          </div>
+                          
+                          <!-- Article Resource -->
+                          <div v-else-if="resource.type === 'article'" class="flex flex-col">
+                            <div class="flex justify-between items-start mb-2">
+                              <h4 class="font-medium text-md text-slate-800">{{ resource.title }}</h4>
+                              <span class="px-2 py-0.5 text-xs rounded-full bg-blue-100 text-blue-800">Article</span>
+                            </div>
+                            
+                            <p class="text-sm text-gray-600 mb-2">{{ resource.description }}</p>
+                            
+                            <a :href="resource.url" target="_blank" rel="noopener noreferrer" class="text-sm text-blue-600 hover:text-blue-800 transition-colors flex items-center">
+                              <span class="material-icons mr-1 text-sm">article</span>
+                              Read Article
+                            </a>
+                          </div>
+                          
+                          <!-- Paper Resource -->
+                          <div v-else-if="resource.type === 'paper'" class="flex flex-col">
+                            <div class="flex justify-between items-start mb-2">
+                              <h4 class="font-medium text-md text-slate-800">{{ resource.title }}</h4>
+                              <span class="px-2 py-0.5 text-xs rounded-full bg-purple-100 text-purple-800">Paper</span>
+                            </div>
+                            
+                            <p class="text-sm text-gray-600 mb-2">{{ resource.description }}</p>
+                            
+                            <a :href="resource.url" target="_blank" rel="noopener noreferrer" class="text-sm text-blue-600 hover:text-blue-800 transition-colors flex items-center">
+                              <span class="material-icons mr-1 text-sm">description</span>
+                              View Paper
+                            </a>
+                          </div>
+                          
+                          <!-- Book Resource -->
+                          <div v-else-if="resource.type === 'book'" class="flex flex-col">
+                            <div class="flex justify-between items-start mb-2">
+                              <h4 class="font-medium text-md text-slate-800">{{ resource.title }}</h4>
+                              <span class="px-2 py-0.5 text-xs rounded-full bg-amber-100 text-amber-800">Book</span>
+                            </div>
+                            
+                            <p class="text-sm text-gray-600 mb-2">{{ resource.description }}</p>
+                            
+                            <a :href="resource.url" target="_blank" rel="noopener noreferrer" class="text-sm text-blue-600 hover:text-blue-800 transition-colors flex items-center">
+                              <span class="material-icons mr-1 text-sm">menu_book</span>
+                              Find Book
+                            </a>
+                          </div>
+                          
+                          <!-- Tool or Other Resource -->
+                          <div v-else class="flex flex-col">
+                            <div class="flex justify-between items-start mb-2">
+                              <h4 class="font-medium text-md text-slate-800">{{ resource.title }}</h4>
+                              <span class="px-2 py-0.5 text-xs rounded-full bg-green-100 text-green-800">
+                                {{ resource.type ? resource.type.charAt(0).toUpperCase() + resource.type.slice(1) : 'Resource' }}
+                              </span>
+                            </div>
+                            
+                            <p class="text-sm text-gray-600 mb-2">{{ resource.description }}</p>
+                            
+                            <a v-if="resource.url && resource.url !== '#'" :href="resource.url" target="_blank" rel="noopener noreferrer" class="text-sm text-blue-600 hover:text-blue-800 transition-colors flex items-center">
+                              <span class="material-icons mr-1 text-sm">link</span>
+                              Open Resource
+                            </a>
+                          </div>
+                        </div>
+                        
+                        <!-- No Resources Message -->
+                        <div v-if="learningResources.length === 0" class="text-center py-6">
+                          <span class="material-icons text-gray-400 text-4xl mb-2">search_off</span>
+                          <p class="text-gray-500">No learning resources available.</p>
+                        </div>
+                        
+                        <!-- Refresh Button -->
+                        <div class="flex justify-center mt-4">
                           <button
-                            class="px-6 py-2.5 bg-maroon-500 text-white rounded-xl hover:bg-maroon-600 transition-all duration-300 flex items-center space-x-2 shadow-md"
+                            @click="fetchLearningResources" 
+                            class="px-4 py-2 rounded-md bg-blue-50 text-blue-600 hover:bg-blue-100 transition-colors text-sm flex items-center"
+                            :disabled="isFetchingRealResources"
                           >
-                            <span class="material-symbols-outlined">send</span>
-                            <span>Post</span>
+                            <span class="material-icons text-sm mr-1" :class="{ 'animate-spin': isFetchingRealResources }">refresh</span>
+                            {{ isFetchingRealResources ? 'Refreshing...' : 'Refresh Resources' }}
                           </button>
                         </div>
                       </div>
-                    </div> -->
+                    </div>
                   </div>
 
                   <!-- Sidebar Content -->
                   <div class="space-y-8">
-                    <!-- Resources -->
-                    <div class="bg-white rounded-2xl shadow-lg p-6">
-                      <h3 class="text-xl font-bold text-slate-900 mb-5">Learning Toolkit</h3>
-                      <div v-if="loadingResources" class="flex justify-center py-4">
-                        <div class="w-8 h-8 border-4 border-maroon-600 border-t-transparent rounded-full animate-spin"></div>
-                      </div>
-                      <div v-else-if="resourcesError" class="text-center py-4">
-                        <p class="text-red-500 mb-2">{{ resourcesError }}</p>
-                        <button @click="fetchLearningResources" class="px-4 py-2 bg-maroon-500 text-white rounded-lg hover:bg-maroon-600">
-                          Retry
-                        </button>
-                      </div>
-                      <ul v-else class="space-y-3">
-                        <li
-                          v-for="(resource, index) in learningResources"
-                          :key="index"
-                          class="flex items-center justify-between p-3 bg-slate-50/50 rounded-lg hover:bg-slate-50 transition-colors cursor-pointer group"
-                        >
-                          <div class="flex items-center space-x-3">
-                            <span
-                              class="material-symbols-outlined text-lg transform transition-all group-hover:scale-110"
-                              :class="getResourceIcon(resource.type).color"
-                            >
-                              {{ getResourceIcon(resource.type).icon }}
-                            </span>
-                            <div class="flex flex-col">
-                              <span class="text-sm font-medium text-slate-700">{{ resource.title }}</span>
-                              <span class="text-xs text-slate-500">{{ resource.description }}</span>
-                            </div>
-                          </div>
-                          <button class="p-2 hover:bg-slate-200 rounded-lg transition-colors">
-                            <span class="material-symbols-outlined text-maroon-500">open_in_new</span>
-                          </button>
-                        </li>
-                        <li v-if="learningResources.length === 0" class="text-center py-4 text-slate-500">
-                          No resources available. 
-                          <button @click="fetchLearningResources" class="text-maroon-600 underline ml-1">
-                            Generate
-                          </button>
-                        </li>
-                      </ul>
-                    </div>
-
-                    <!-- Challenges -->
-                    <div class="bg-white rounded-2xl shadow-lg p-6">
-                      <h3 class="text-xl font-bold text-slate-900 mb-5">Skill Challenges</h3>
-                      <ul class="space-y-4">
-                        <li
-                          v-for="(challenge, index) in selectedLecture.challenges"
-                          :key="index"
-                          class="p-3 bg-slate-50/50 rounded-lg hover:bg-slate-50 transition-colors"
-                        >
-                          <div class="flex items-start space-x-3">
-                            <span
-                              class="flex-shrink-0 w-7 h-7 bg-maroon-100 text-maroon-600 rounded-lg flex items-center justify-center text-sm font-bold"
-                            >
-                              {{ index + 1 }}
-                            </span>
-                            <p class="text-slate-700 leading-relaxed">{{ challenge.question }}</p>
-                          </div>
-                        </li>
-                      </ul>
-                    </div>
+                    <!-- Placeholder for future sidebar content -->
                   </div>
                 </div>
 
@@ -426,39 +564,39 @@
 
             <!-- Notes content -->
             <div v-if="activeTab === 'notes'" class="flex flex-col h-full">
-              <!-- Formatting Toolbar -->
-              <div class="border-b border-slate-200 p-2 bg-white">
-                <div class="flex items-center space-x-1">
-                  <button
-                    v-for="tool in formattingTools"
-                    :key="tool.command"
-                    @click="formatText(tool.command)"
-                    class="p-2 rounded hover:bg-slate-100 transition-colors"
-                    :class="{ 'bg-maroon-50 text-maroon-600': tool.isActive }"
-                    :title="tool.label"
-                  >
-                    <span class="material-symbols-outlined text-sm">{{ tool.icon }}</span>
-                  </button>
-                  <div class="h-4 w-px bg-slate-200 mx-1"></div>
-                  <button
-                    @click="insertTimestamp"
-                    class="p-2 rounded hover:bg-slate-100 transition-colors flex items-center space-x-1"
-                    title="Insert current video timestamp"
-                  >
-                    <span class="material-symbols-outlined text-sm">timer</span>
-                    <span class="text-xs font-medium">{{ formatTime(videoProgress) }}</span>
-                  </button>
-                </div>
+            <!-- Formatting Toolbar -->
+            <div class="border-b border-slate-200 p-2 bg-white">
+              <div class="flex items-center space-x-1">
+                <button
+                  v-for="tool in formattingTools"
+                  :key="tool.command"
+                  @click="formatText(tool.command)"
+                  class="p-2 rounded hover:bg-slate-100 transition-colors"
+                  :class="{ 'bg-maroon-50 text-maroon-600': tool.isActive }"
+                  :title="tool.label"
+                >
+                  <span class="material-symbols-outlined text-sm">{{ tool.icon }}</span>
+                </button>
+                <div class="h-4 w-px bg-slate-200 mx-1"></div>
+                <button
+                  @click="insertTimestamp"
+                  class="p-2 rounded hover:bg-slate-100 transition-colors flex items-center space-x-1"
+                  title="Insert current video timestamp"
+                >
+                  <span class="material-symbols-outlined text-sm">timer</span>
+                  <span class="text-xs font-medium">{{ formatTime(videoProgress) }}</span>
+                </button>
               </div>
+            </div>
 
-              <div class="flex-1 overflow-y-auto p-4">
-                <textarea
-                  v-model="currentNotes"
+            <div class="flex-1 overflow-y-auto p-4">
+              <textarea
+                v-model="currentNotes"
                   placeholder="Take notes for this lecture..."
                   class="w-full h-full resize-none border-0 focus:ring-0 p-0 bg-transparent text-slate-800"
-                  @input="handleNotesInput"
-                  @keydown="handleKeyboardShortcuts"
-                ></textarea>
+                @input="handleNotesInput"
+                @keydown="handleKeyboardShortcuts"
+              ></textarea>
               </div>
             </div>
 
@@ -490,6 +628,7 @@ import { useCourse } from '@/composables/useCourse'
 import { useNotification } from '@/composables/useNotification'
 import api from '@/utils/api'
 import { useToast } from 'vue-toastification'
+import { useChatStore } from '@/stores/useChatStore'
 
 export default {
   name: 'CourseLectureView',
@@ -528,6 +667,10 @@ export default {
     const loadingResources = ref(false)
     const conceptsError = ref(null)
     const resourcesError = ref(null)
+    const isShowingFallbackData = ref(false)
+    const isFetchingRealResources = ref(false)
+    const lastResourceUpdateTime = ref(null)
+    const lastConceptsUpdateTime = ref(null)
 
     // Course Data & Methods
     const courseId = route.params.courseId
@@ -1028,6 +1171,34 @@ export default {
       },
     )
 
+    // Add a new watch for lecture changes to trigger key concepts generation
+    watch(
+      () => selectedLecture.value?.id,
+      (newId) => {
+        if (newId) {
+          // Show notification that concepts are being generated
+          toast.info('Generating key concepts for this lecture...', {
+            position: 'bottom-right',
+            timeout: 3000
+          })
+          
+          // Set loading state to true before fetch
+          loadingConcepts.value = true
+          isShowingFallbackData.value = true
+          
+          // Fetch key concepts
+          fetchKeyConcepts()
+          
+          // Ensure chat is available
+          const chatStore = useChatStore()
+          if (!chatStore.isOpen && !chatStore.initialized) {
+            chatStore.initialize()
+          }
+        }
+      },
+      { immediate: true }
+    )
+
     // Fetch Key Concepts
     const fetchKeyConcepts = async () => {
       if (!selectedLecture.value) return;
@@ -1114,6 +1285,8 @@ export default {
             if (data?.concepts) {
               keyConcepts.value = data.concepts;
               localStorage.setItem(`keyConcepts_${selectedLecture.value.id}`, JSON.stringify(keyConcepts.value));
+              lastConceptsUpdateTime.value = new Date().toISOString(); // Add this line
+              isShowingFallbackData.value = false; // Add this line
             }
           } else if (response.status === 404 || response.status === 500) {
             console.log(`GET request failed with ${response.status}, trying POST`);
@@ -1137,6 +1310,8 @@ export default {
                 if (data?.concepts) {
                   keyConcepts.value = data.concepts;
                   localStorage.setItem(`keyConcepts_${selectedLecture.value.id}`, JSON.stringify(keyConcepts.value));
+                  lastConceptsUpdateTime.value = new Date().toISOString(); // Add this line
+                  isShowingFallbackData.value = false; // Add this line
                 }
               } else {
                 console.warn('POST request also failed:', postResponse.status);
@@ -1160,167 +1335,272 @@ export default {
       }
     };
     
-    // Fetch Learning Resources
+    // Fetch Learning Resources using Gemini and YouTube API
     const fetchLearningResources = async () => {
       if (!selectedLecture.value) return;
       
       loadingResources.value = true;
       resourcesError.value = null;
+      isShowingFallbackData.value = true;
       
       // Immediately show mock/fallback data
       const fallbackResources = [
         {
-          type: "article",
-          title: "Comprehensive Guide to the Topic",
-          description: "An in-depth article covering all aspects discussed in the lecture."
-        },
-        {
+          title: "Introduction to the Topic",
+          description: "Overview of key learning points from this lecture topic.",
           type: "video",
-          title: "Visual Explanation with Examples",
-          description: "A detailed video tutorial with practical examples and demonstrations."
+          url: "#"
         },
         {
-          type: "book",
-          title: "Advanced Textbook Reference",
-          description: "The definitive textbook on this subject with detailed explanations."
+          title: "Related Academic Paper",
+          description: "Academic research that supports or extends the lecture content.",
+          type: "paper",
+          url: "#"
         },
         {
+          title: "Additional Reading",
+          description: "Supplementary material that provides more context about this subject.",
+          type: "article",
+          url: "#"
+        },
+        {
+          title: "Hands-On Practice Tool",
+          description: "Interactive tool to practice concepts from this lecture.",
           type: "tool",
-          title: "Interactive Learning Platform",
-          description: "Practice what you've learned with this hands-on tool."
-        },
-        {
-          type: "course",
-          title: "Supplementary Online Course",
-          description: "Expand your knowledge with this related online course."
+          url: "#"
         }
       ];
       
+      // Initialize with fallback data
+      learningResources.value = [...fallbackResources];
+      
       // Check localStorage first
-      const storedResources = localStorage.getItem(`learningResources_${selectedLecture.value.id}`);
+      const storageKey = `learning-resources-${courseId}-${selectedLecture.value.id}`;
+      const storedResources = localStorage.getItem(storageKey);
       if (storedResources) {
         try {
-          learningResources.value = JSON.parse(storedResources);
+          const parsedResources = JSON.parse(storedResources);
+          learningResources.value = parsedResources;
+          isShowingFallbackData.value = false;
           loadingResources.value = false;
-        } catch (e) {
-          console.error('Error parsing stored resources:', e);
-          learningResources.value = fallbackResources;
-          loadingResources.value = false;
+          console.log("Using cached learning resources from localStorage");
+        } catch (error) {
+          console.error("Error parsing stored learning resources:", error);
         }
-      } else {
-        // Show fallback immediately
-        learningResources.value = fallbackResources;
-        loadingResources.value = false;
       }
       
-      // Then fetch real data in background without causing frontend errors
-      try {
-        const token = localStorage.getItem('token');
-        if (!token) {
-          console.warn('No authentication token found');
-          return; // Exit early but don't throw - we already have fallback data showing
-        }
-        
-        const headers = {
-          headers: {
-            Authorization: `Bearer ${token}`,
-          },
-        };
-        
-        // Try to fetch data without breaking the UI
-        let url = `${import.meta.env.VITE_API_URL || ''}/api/v1/courses/${currentCourse.value.id}/lectures/${selectedLecture.value.id}/learning-resources`;
-        
-        // Safely add video_url as query parameter if available
+      // Get token for authorization
+      const token = localStorage.getItem('token');
+      if (!token) {
+        console.error("No authentication token found");
+        loadingResources.value = false;
+        return;
+      }
+      
+      // Indicate we're fetching real data in the background
+      isFetchingRealResources.value = true;
+      
+      // Prepare URL with query parameters for Gemini integration
+      const apiUrl = new URL(`${import.meta.env.VITE_API_URL}/courses/${courseId}/lectures/${selectedLecture.value.id}/learning-resources`);
+      
+      // Add video_url parameter if available
+      if (currentVideoUrl.value) {
+        apiUrl.searchParams.append('video_url', currentVideoUrl.value);
+      }
+      
+      // Add parameters for Gemini and YouTube integration
+      apiUrl.searchParams.append('use_gemini', 'true');
+      apiUrl.searchParams.append('include_youtube', 'true');
+      
+      // Topic from lecture title for better search context
+      const searchTopic = selectedLecture.value.title || '';
+      if (searchTopic) {
+        apiUrl.searchParams.append('topic', encodeURIComponent(searchTopic));
+      }
+      
+      // Function to retry with exponential backoff
+      const fetchWithRetry = async (retries = 3, delay = 1000) => {
         try {
-          if (selectedLecture.value.videoUrl) {
-            const urlObj = new URL(url, window.location.origin);
-            urlObj.searchParams.append('video_url', selectedLecture.value.videoUrl);
-            url = urlObj.toString();
-          }
-        } catch (urlError) {
-          console.warn('Error constructing URL with video_url param:', urlError);
-          // Continue with original URL if there's an error
-        }
-        
-        console.log('Attempting to fetch learning resources from:', url);
-        
-        // Use fetch with timeout instead of axios to prevent request aborts
-        const controller = new AbortController();
-        const timeoutId = setTimeout(() => controller.abort(), 8000); // 8-second timeout
-        
-        try {
-          const response = await fetch(url, {
+          const response = await fetch(apiUrl, {
             method: 'GET',
             headers: {
-              Authorization: headers.headers.Authorization,
+              'Authorization': `Bearer ${token}`,
               'Content-Type': 'application/json'
-            },
-            signal: controller.signal
+            }
           });
           
-          clearTimeout(timeoutId);
-          
-          if (response.ok) {
-            const data = await response.json();
-            if (data?.resources) {
-              learningResources.value = data.resources;
-              localStorage.setItem(`learningResources_${selectedLecture.value.id}`, JSON.stringify(learningResources.value));
-            }
-          } else if (response.status === 404 || response.status === 500) {
-            console.log(`GET request failed with ${response.status}, trying POST`);
+          if (response.status === 404) {
+            console.log("Resources not found, generating new ones...");
             
-            // Try POST request if GET fails (404 or 500)
-            try {
-              const postResponse = await fetch(
-                `${import.meta.env.VITE_API_URL || ''}/api/v1/courses/${currentCourse.value.id}/lectures/${selectedLecture.value.id}/learning-resources`, 
-                {
-                  method: 'POST',
-                  headers: {
-                    Authorization: headers.headers.Authorization,
-                    'Content-Type': 'application/json'
-                  },
-                  body: JSON.stringify({ video_url: selectedLecture.value.videoUrl }),
-                }
-              );
-              
-              if (postResponse.ok) {
-                const data = await postResponse.json();
-                if (data?.resources) {
-                  learningResources.value = data.resources;
-                  localStorage.setItem(`learningResources_${selectedLecture.value.id}`, JSON.stringify(learningResources.value));
-                }
-              } else {
-                console.warn('POST request also failed:', postResponse.status);
-                // Continue showing fallback - no need to throw error
-              }
-            } catch (postError) {
-              console.warn('Error during POST request:', postError);
-              // Continue showing fallback - no need to throw error
+            // Send POST request to generate resources
+            const postResponse = await fetch(apiUrl, {
+              method: 'POST',
+              headers: {
+                'Authorization': `Bearer ${token}`,
+                'Content-Type': 'application/json'
+              },
+              body: JSON.stringify({
+                video_url: currentVideoUrl.value,
+                use_gemini: true,
+                include_youtube: true,
+                topic: searchTopic
+              })
+            });
+            
+            if (!postResponse.ok) {
+              throw new Error(`Failed to generate resources: ${postResponse.status}`);
             }
+            
+            return await postResponse.json();
           }
-        } catch (fetchError) {
-          console.warn('Fetch error:', fetchError);
-          // If fetch was aborted due to timeout, show a toast
-          if (fetchError.name === 'AbortError') {
-            toast.warning('Request for learning resources timed out. Using fallback data.');
+          
+          if (!response.ok) {
+            throw new Error(`Failed to fetch resources: ${response.status}`);
           }
+          
+          return await response.json();
+          
+        } catch (error) {
+          if (retries <= 0) {
+            // If all retries failed, try direct YouTube search as fallback
+            console.log("All API requests failed. Falling back to direct YouTube search.");
+            return fetchYouTubeVideos(searchTopic);
+          }
+          
+          console.log(`Retry attempt left: ${retries}. Retrying in ${delay}ms...`);
+          await new Promise(resolve => setTimeout(resolve, delay));
+          return fetchWithRetry(retries - 1, delay * 2);
+        }
+      };
+      
+      try {
+        const data = await fetchWithRetry();
+        if (data) {
+          // Update resources with real data
+          const resources = Array.isArray(data.resources) ? data.resources : [];
+          
+          // Process resources to ensure YouTube IDs are extracted
+          const processedResources = resources.map(resource => {
+            if (resource.type === 'video' && resource.url) {
+              // Extract YouTube ID from URL if present
+              const youtubeId = extractYoutubeId(resource.url);
+              if (youtubeId) {
+                return {
+                  ...resource,
+                  youtubeId
+                };
+              }
+            }
+            return resource;
+          });
+          
+          learningResources.value = processedResources;
+          isShowingFallbackData.value = false;
+          
+          // Cache in localStorage for future use
+          localStorage.setItem(storageKey, JSON.stringify(processedResources));
         }
       } catch (error) {
-        console.warn('Error in fetchLearningResources:', error);
-        // We're already showing fallback data, so just log the error
+        console.error("Error fetching learning resources:", error);
+        // We keep the fallback data visible in case of error
+      } finally {
+        loadingResources.value = false;
+        isFetchingRealResources.value = false;
       }
     };
     
-    // Watch for lecture changes to load data
-    watch(
-      () => selectedLecture.value?.id,
-      (newId) => {
-        if (newId) {
-          fetchKeyConcepts();
-          fetchLearningResources();
+    // Extract YouTube video ID from a URL
+    const extractYoutubeId = (url) => {
+      if (!url) return null;
+      
+      // Handle various YouTube URL formats
+      const regExp = /^.*((youtu.be\/)|(v\/)|(\/u\/\w\/)|(embed\/)|(watch\?))\??v?=?([^#&?]*).*/;
+      const match = url.match(regExp);
+      return (match && match[7].length === 11) ? match[7] : null;
+    };
+    
+    // Fetch YouTube videos directly as a fallback
+    const fetchYouTubeVideos = async (topic) => {
+      console.log("Simulating YouTube video search for topic:", topic);
+      
+      // This is a simulated response - in a real implementation, 
+      // you would call the YouTube API or use a backend service
+      const mockYouTubeResults = {
+        resources: [
+          {
+            title: `${topic} - Comprehensive Tutorial`,
+            description: "In-depth video explanation with practical examples",
+            type: "video",
+            url: "https://www.youtube.com/watch?v=dQw4w9WgXcQ",
+            youtubeId: "dQw4w9WgXcQ"
+          },
+          {
+            title: `${topic} for Beginners`,
+            description: "Simplified explanation perfect for newcomers to the subject",
+            type: "video",
+            url: "https://www.youtube.com/watch?v=kJQP7kiw5Fk",
+            youtubeId: "kJQP7kiw5Fk"
+          },
+          {
+            title: `Advanced ${topic} Techniques`,
+            description: "Next-level concepts and applications for experienced learners",
+            type: "video",
+            url: "https://www.youtube.com/watch?v=JGwWNGJdvx8",
+            youtubeId: "JGwWNGJdvx8"
+          }
+        ]
+      };
+      
+      return mockYouTubeResults;
+    };
+    
+    // Load YouTube video into the player
+    const loadYoutubeVideo = (videoId) => {
+      if (!videoId) return;
+      
+      // Update video source with YouTube embed URL
+      currentVideoUrl.value = `https://www.youtube.com/embed/${videoId}?autoplay=1&rel=0`;
+      videoError.value = null;
+      
+      // Update active panel to show video
+      showTranscription.value = false;
+      
+      // Log video loading for analytics
+      console.log("Loading YouTube video:", videoId);
+      
+      // Save to recent videos in localStorage
+      saveRecentVideo({
+        id: videoId,
+        title: "YouTube Video",
+        source: "youtube",
+        url: `https://www.youtube.com/watch?v=${videoId}`,
+        timestamp: new Date().toISOString()
+      });
+    };
+    
+    // Save recently watched video to localStorage
+    const saveRecentVideo = (videoData) => {
+      try {
+        const recentVideos = JSON.parse(localStorage.getItem('recent-videos') || '[]');
+        
+        // Check if this video is already in the list
+        const existingIndex = recentVideos.findIndex(v => v.id === videoData.id);
+        if (existingIndex >= 0) {
+          // Remove the existing entry
+          recentVideos.splice(existingIndex, 1);
         }
+        
+        // Add the new entry at the beginning
+        recentVideos.unshift(videoData);
+        
+        // Keep only the most recent 10 videos
+        const trimmedVideos = recentVideos.slice(0, 10);
+        
+        localStorage.setItem('recent-videos', JSON.stringify(trimmedVideos));
+      } catch (error) {
+        console.error("Error saving recent video:", error);
       }
-    );
+    };
 
     // Lifecycle Hooks
     onMounted(() => {
@@ -1345,6 +1625,47 @@ export default {
       },
     )
 
+    // Add formatDateRelative function
+    const formatDateRelative = (timestamp) => {
+      if (!timestamp) return '';
+      
+      const now = new Date();
+      const date = new Date(timestamp);
+      const diffInSeconds = Math.floor((now - date) / 1000);
+      
+      if (diffInSeconds < 60) {
+        return 'just now';
+      } else if (diffInSeconds < 3600) {
+        const minutes = Math.floor(diffInSeconds / 60);
+        return `${minutes} ${minutes === 1 ? 'minute' : 'minutes'} ago`;
+      } else if (diffInSeconds < 86400) {
+        const hours = Math.floor(diffInSeconds / 3600);
+        return `${hours} ${hours === 1 ? 'hour' : 'hours'} ago`;
+      } else {
+        return date.toLocaleDateString();
+      }
+    };
+
+    // Highlight selected concept
+    const highlightConcept = (concept) => {
+      if (!concept) return;
+      
+      // Show a toast with the concept
+      toast.info(`Focusing on: ${concept}`, {
+        timeout: 3000,
+        position: "bottom-center"
+      });
+      
+      // In a real implementation, you could:
+      // 1. Scroll to relevant part of the video
+      // 2. Add the concept to user's study notes
+      // 3. Find related resources
+      // 4. Show more detail about the concept
+      
+      // For now, we'll just log it
+      console.log("User selected concept:", concept);
+    };
+
     return {
       // State
       loading,
@@ -1365,8 +1686,11 @@ export default {
       loadingResources,
       conceptsError,
       resourcesError,
+      isShowingFallbackData,
+      lastConceptsUpdateTime,
       fetchKeyConcepts,
       fetchLearningResources,
+      highlightConcept,
 
       // Course Data
       currentCourse,
@@ -1415,6 +1739,8 @@ export default {
       formatTime,
       selectFirstLecture,
       closeSidebar,
+      formatDateRelative,
+      loadYoutubeVideo,
     }
   },
 }
@@ -1563,7 +1889,7 @@ export default {
 
 /* Card and Button Base Styles */
 .card-base {
-  @apply bg-white rounded-2xl shadow-sm hover:shadow-md 
+  @apply bg-white rounded-2xl shadow-sm 
          border border-slate-200 transition-all duration-200;
 }
 

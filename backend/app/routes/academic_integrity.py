@@ -12,9 +12,9 @@ import uuid
 from enum import Enum
 from sqlalchemy.ext.asyncio import AsyncSession
 from sqlalchemy.future import select
-from sqlalchemy import and_, or_
-from app.models.assignment import Submission
-from app.models.user import User
+from sqlalchemy import and_, or_, func, desc
+from app.models.assignment import AssignmentSubmission
+from app.models.user import User, UserRole
 from app.services.gemini_integrity_service import gemini_integrity_service
 
 router = APIRouter(
@@ -508,7 +508,7 @@ async def flag_submission(
     """
     try:
         # Check if submission exists
-        submission = await db.get(Submission, submission_id)
+        submission = await db.get(AssignmentSubmission, submission_id)
         if not submission or submission.assignment_id != assignment_id:
             raise HTTPException(status_code=404, detail="Submission not found")
         
@@ -557,7 +557,7 @@ async def get_submission_flag(
     """
     try:
         # Check if submission exists
-        submission = await db.get(Submission, submission_id)
+        submission = await db.get(AssignmentSubmission, submission_id)
         if not submission or submission.assignment_id != assignment_id:
             raise HTTPException(status_code=404, detail="Submission not found")
         
@@ -607,7 +607,7 @@ async def update_submission_flag(
     """
     try:
         # Check if submission exists
-        submission = await db.get(Submission, submission_id)
+        submission = await db.get(AssignmentSubmission, submission_id)
         if not submission or submission.assignment_id != assignment_id:
             raise HTTPException(status_code=404, detail="Submission not found")
         

@@ -220,19 +220,32 @@ router.beforeEach(async (to, from, next) => {
     
     // Log actual role for debugging
     console.log(`ROUTER GUARD: User Role = "${userRole}", ROLE.FACULTY = "${ROLE.FACULTY}", ROLE.SUPPORT = "${ROLE.SUPPORT}"`);
-    console.log(`Role comparison: userRole === ROLE.SUPPORT is ${userRole === ROLE.SUPPORT}`);
-    console.log(`Role comparison: userRole === ROLE.FACULTY is ${userRole === ROLE.FACULTY}`);
+    console.log(`ROUTER GUARD: User Role Type = ${typeof userRole}, ROLE.FACULTY Type = ${typeof ROLE.FACULTY}`);
+    console.log(`ROUTER GUARD: Role comparison: userRole === ROLE.SUPPORT is ${userRole === ROLE.SUPPORT}`);
+    console.log(`ROUTER GUARD: Role comparison: userRole === ROLE.FACULTY is ${userRole === ROLE.FACULTY}`);
+    console.log(`ROUTER GUARD: Role comparison: userRole.toLowerCase() === ROLE.FACULTY.toLowerCase() is ${userRole.toLowerCase() === ROLE.FACULTY.toLowerCase()}`);
+    console.log(`ROUTER GUARD: localStorage userRole = "${localStorage.getItem('userRole')}"`);
     
     // Handle role-specific paths
     if (to.path.startsWith('/support') && userRole !== ROLE.SUPPORT) {
       console.log('Attempting to access support route without support role');
-      next({ path: rolePaths.STUDENT.dashboard });
+      // Redirect to appropriate dashboard based on user role
+      if (userRole === ROLE.FACULTY) {
+        next({ path: rolePaths.FACULTY.dashboard });
+      } else {
+        next({ path: rolePaths.STUDENT.dashboard });
+      }
       return;
     }
     
     if (to.path.startsWith('/faculty') && userRole !== ROLE.FACULTY) {
       console.log('Attempting to access faculty route without faculty role');
-      next({ path: rolePaths.STUDENT.dashboard });
+      // Redirect to appropriate dashboard based on user role
+      if (userRole === ROLE.SUPPORT) {
+        next({ path: rolePaths.SUPPORT.dashboard });
+      } else {
+        next({ path: rolePaths.STUDENT.dashboard });
+      }
       return;
     }
     
@@ -278,19 +291,22 @@ router.beforeEach(async (to, from, next) => {
 // Navigation guard to handle role switching based on URL
 router.beforeEach((to, from, next) => {
   const authStore = useAuthStore()
-  const isDevelopment = import.meta.env.VITE_NODE_ENV === 'development'
-
-  if (isDevelopment) {
-    // Extract role from URL path
-    const path = to.path
-    if (path.startsWith('/user/')) {
-      authStore.switchRole(ROLE.STUDENT)
-    } else if (path.startsWith('/faculty/')) {
-      authStore.switchRole(ROLE.FACULTY)
-    } else if (path.startsWith('/support/')) {
-      authStore.switchRole(ROLE.SUPPORT)
-    }
-  }
+  // Commenting out development mode role-switching to prevent overriding user roles
+  // This was causing all users to be redirected to the support dashboard
+  // when navigating to support routes
+  
+  // const isDevelopment = import.meta.env.VITE_NODE_ENV === 'development'
+  // if (isDevelopment) {
+  //   // Extract role from URL path
+  //   const path = to.path
+  //   if (path.startsWith('/user/')) {
+  //     authStore.switchRole(ROLE.STUDENT)
+  //   } else if (path.startsWith('/faculty/')) {
+  //     authStore.switchRole(ROLE.FACULTY)
+  //   } else if (path.startsWith('/support/')) {
+  //     authStore.switchRole(ROLE.SUPPORT)
+  //   }
+  // }
 
   next()
 })

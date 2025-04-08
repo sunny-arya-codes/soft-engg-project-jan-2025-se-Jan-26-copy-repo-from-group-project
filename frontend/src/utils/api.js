@@ -23,9 +23,24 @@ const api = axios.create({
   }
 })
 
+// Add logging for all requests
+const logRequest = (config) => {
+  console.log(`🚀 API REQUEST: ${config.method.toUpperCase()} ${config.url}`, config.params || {})
+  return config
+}
+
+// Add logging for all responses
+const logResponse = (response) => {
+  console.log(`✅ API RESPONSE: ${response.config.method.toUpperCase()} ${response.config.url}`, response.status)
+  return response
+}
+
 // Add a request interceptor to add the auth token to requests
 api.interceptors.request.use(
   config => {
+    // Apply request logging
+    logRequest(config)
+    
     // Get the auth token from the store or localStorage
     const authStore = useAuthStore()
     let token = authStore.token
@@ -62,9 +77,9 @@ api.interceptors.request.use(
       config.params = config.params || {}
 
       // Only add timestamp if it hasn't been added manually
-      // if (!config.params['_t']) {
-      //   config.params['_t'] = Date.now()
-      // }
+      if (!config.params['_t']) {
+        config.params['_t'] = Date.now()
+      }
 
       // Ensure Cache-Control header is set to prevent browser caching
       config.headers['Cache-Control'] = 'no-cache, no-store, must-revalidate'
@@ -75,15 +90,25 @@ api.interceptors.request.use(
     return config
   },
   error => {
+    console.error('Request error:', error)
     return Promise.reject(error)
   }
 )
 
 // Add a response interceptor for error handling
 api.interceptors.response.use(
-  response => response,
+  response => {
+    // Apply response logging
+    return logResponse(response)
+  },
   error => {
     console.error('API Error:', error)
+    
+    if (error.response) {
+      console.error(`API Response Error: ${error.response.status} ${error.response.statusText}`, error.config.url)
+    } else if (error.request) {
+      console.error('API Request Error: No response received', error.config.url)
+    }
     
     // Handle authentication errors
     if (error.response && error.response.status === 401) {
@@ -101,5 +126,17 @@ api.interceptors.response.use(
     return Promise.reject(error)
   }
 )
+
+// Helper function to check if the API is reachable
+export const checkApiHealth = async () => {
+  try {
+    // Try to reach the API health endpoint
+    const response = await api.get('/health', { timeout: 5000 })
+    return response.status === 200
+  } catch (error) {
+    console.error('API health check failed:', error)
+    return false
+  }
+}
 
 export default api

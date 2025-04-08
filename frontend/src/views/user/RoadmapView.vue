@@ -255,143 +255,319 @@ export default {
       // Show loading state
       this.loading = true;
       
-      // Use the RoadmapService to fetch the roadmap
-      const data = await RoadmapService.getRoadmap(this.id);
-      
-      if (data && data.roadmap) {
-        this.roadmap = data.roadmap;
-        
-        // Set context for chat
-        this.currentLearningContext = {
-          type: 'roadmap',
-          title: this.roadmap.title,
-          description: this.roadmap.description,
-          courseId: this.id
-        };
-      } else {
-        throw new Error('No valid roadmap data found');
-      }
-    } catch (err) {
-      this.error = 'Failed to load roadmap: ' + (err.message || 'Unknown error');
-      console.error('Error loading roadmap:', err);
-      
-      // Fallback to mock data
+      // Initialize with mock data immediately so something is always shown
       this.loadMockRoadmap();
+      
+      // Try to fetch real data
+      try {
+        const data = await RoadmapService.getRoadmap(this.id);
+        
+        if (data && data.roadmap) {
+          // Check if the roadmap has valid milestones
+          if (data.roadmap.milestones && 
+              Array.isArray(data.roadmap.milestones) && 
+              data.roadmap.milestones.length > 0) {
+            
+            console.log('Found valid roadmap data, replacing mock data');
+            this.roadmap = data.roadmap;
+            
+            // Update chat context
+            this.currentLearningContext = {
+              type: 'roadmap',
+              title: this.roadmap.title,
+              description: this.roadmap.description,
+              courseId: this.id
+            };
+            
+            // Remove error if any
+            this.error = null;
+          } else {
+            console.warn('API returned roadmap with no milestones, keeping mock data');
+            this.toast.warning('Roadmap from server has no content. Using sample data instead.');
+          }
+        } else {
+          console.warn('API returned invalid roadmap structure, keeping mock data');
+        }
+      } catch (err) {
+        console.error('Error loading roadmap from API:', err);
+        
+        if (err.response && err.response.status === 404) {
+          this.toast.warning('Roadmap not found for this course. Using sample data instead.');
+        } else if (err.response && err.response.status === 401) {
+          this.toast.error('Authentication required to access this roadmap.');
+        } else {
+          this.toast.error('Failed to load roadmap: ' + (err.message || 'Unknown error'));
+        }
+        
+        // We already loaded mock data, so no need to call loadMockRoadmap again
+        // Just keep what we have
+      }
     } finally {
       this.loading = false;
     }
   },
   methods: {
     loadMockRoadmap() {
-      // Mock data as fallback
-      const mockRoadmaps = {
-        1: {
-          id: 1,
-          title: 'Python Programming Path',
-          description: 'Master Python programming with hands-on projects and exercises',
-          completedSteps: 3,
-          totalSteps: 8,
-          milestones: [
+      // Generate different mock data based on the course ID
+      const courseId = parseInt(this.id);
+      
+      // Default mock data template that will be customized
+      const mockTemplate = {
+        id: courseId.toString(),
+        title: "Learning Path",
+        description: "Personalized roadmap for your learning journey",
+        completedSteps: 0,
+        totalSteps: 6,
+        milestones: []
+      };
+      
+      // Customize based on course ID
+      switch (courseId) {
+        case 1:
+          mockTemplate.title = "Python Programming Path";
+          mockTemplate.description = "Master Python programming with hands-on projects and exercises";
+          mockTemplate.completedSteps = 3;
+          mockTemplate.totalSteps = 8;
+          mockTemplate.milestones = [
             {
               id: 1,
-              title: 'Python Basics',
-              description: 'Learn Python syntax and basic concepts',
-              status: 'completed',
-              estimatedTime: '2 weeks',
+              title: "Python Basics",
+              description: "Learn Python syntax and basic concepts",
+              status: "completed",
+              estimatedTime: "2 weeks",
               locked: false,
               materials: [
                 {
                   id: 1,
-                  type: 'video',
-                  title: 'Introduction to Python',
-                  description: 'Get started with Python programming',
-                  duration: '2 hours',
-                  url: '/course/python/intro'
+                  type: "video",
+                  title: "Introduction to Python",
+                  description: "Get started with Python programming",
+                  duration: "2 hours",
+                  url: `/course/${courseId}/lecture/1`
+                },
+                {
+                  id: 2,
+                  type: "exercise",
+                  title: "Python Syntax Practice",
+                  description: "Practice basic Python syntax",
+                  duration: "1 hour",
+                  url: `/course/${courseId}/lecture/2`
                 }
               ]
             },
             {
               id: 2,
-              title: 'Data Structures',
-              description: 'Master Python data structures',
-              status: 'in_progress',
-              estimatedTime: '3 weeks',
+              title: "Data Structures",
+              description: "Master Python data structures",
+              status: "in_progress",
+              estimatedTime: "3 weeks",
+              locked: false,
+              materials: [
+                {
+                  id: 3,
+                  type: "video",
+                  title: "Lists and Dictionaries",
+                  description: "Practice with Python collections",
+                  duration: "3 hours",
+                  url: `/course/${courseId}/lecture/3`
+                },
+                {
+                  id: 4,
+                  type: "project",
+                  title: "Data Structure Implementation",
+                  description: "Build common data structures from scratch",
+                  duration: "5 hours",
+                  url: `/course/${courseId}/lecture/4`
+                }
+              ]
+            },
+            {
+              id: 3,
+              title: "Functions and Modules",
+              description: "Learn how to organize code with functions and modules",
+              status: "locked",
+              estimatedTime: "2 weeks",
+              locked: true,
+              materials: [
+                {
+                  id: 5,
+                  type: "video",
+                  title: "Python Functions",
+                  description: "Learn to write reusable code with functions",
+                  duration: "2 hours",
+                  url: `/course/${courseId}/lecture/5`
+                }
+              ]
+            }
+          ];
+          break;
+          
+        case 2:
+          mockTemplate.title = "Web Development Path";
+          mockTemplate.description = "Master web development fundamentals and modern frameworks";
+          mockTemplate.completedSteps = 2;
+          mockTemplate.totalSteps = 6;
+          mockTemplate.milestones = [
+            {
+              id: 1,
+              title: "HTML & CSS",
+              description: "Learn the basics of web development",
+              status: "completed",
+              estimatedTime: "2 weeks",
+              locked: false,
+              materials: [
+                {
+                  id: 1,
+                  type: "video",
+                  title: "HTML Fundamentals",
+                  description: "Get started with HTML5",
+                  duration: "2 hours",
+                  url: `/course/${courseId}/lecture/1`
+                },
+                {
+                  id: 2,
+                  type: "exercise",
+                  title: "CSS Styling",
+                  description: "Master the fundamentals of CSS",
+                  duration: "2 hours",
+                  url: `/course/${courseId}/lecture/2`
+                }
+              ]
+            },
+            {
+              id: 2,
+              title: "JavaScript Basics",
+              description: "Learn the fundamentals of JavaScript",
+              status: "in_progress",
+              estimatedTime: "3 weeks",
+              locked: false,
+              materials: [
+                {
+                  id: 3,
+                  type: "tutorial",
+                  title: "JavaScript Syntax",
+                  description: "Core JavaScript concepts",
+                  duration: "3 hours",
+                  url: `/course/${courseId}/lecture/3`
+                }
+              ]
+            }
+          ];
+          break;
+          
+        case 3:
+          mockTemplate.title = "Machine Learning Path";
+          mockTemplate.description = "Learn machine learning concepts and practical applications";
+          mockTemplate.completedSteps = 1;
+          mockTemplate.totalSteps = 10;
+          mockTemplate.milestones = [
+            {
+              id: 1,
+              title: "ML Foundations",
+              description: "Understanding machine learning basics",
+              status: "in_progress",
+              estimatedTime: "4 weeks",
+              locked: false,
+              materials: [
+                {
+                  id: 1,
+                  type: "course",
+                  title: "Introduction to ML",
+                  description: "Basic concepts and terminology",
+                  duration: "4 hours",
+                  url: `/course/${courseId}/lecture/1`
+                },
+                {
+                  id: 2,
+                  type: "project",
+                  title: "Simple Regression Model",
+                  description: "Build your first ML model",
+                  duration: "3 hours",
+                  url: `/course/${courseId}/lecture/2`
+                }
+              ]
+            }
+          ];
+          break;
+          
+        default:
+          // Generic roadmap for any other course
+          mockTemplate.title = `Learning Path for Course ${courseId}`;
+          mockTemplate.description = "Custom learning journey for this course";
+          mockTemplate.completedSteps = 1;
+          mockTemplate.totalSteps = 5;
+          mockTemplate.milestones = [
+            {
+              id: 1,
+              title: "Getting Started",
+              description: "Introduction to the course fundamentals",
+              status: "completed",
+              estimatedTime: "1 week",
+              locked: false,
+              materials: [
+                {
+                  id: 1,
+                  type: "video",
+                  title: "Course Introduction",
+                  description: "Overview of what you'll learn",
+                  duration: "1 hour",
+                  url: `/course/${courseId}/lecture/1`
+                }
+              ]
+            },
+            {
+              id: 2,
+              title: "Core Concepts",
+              description: "Master the fundamental principles",
+              status: "in_progress",
+              estimatedTime: "2 weeks",
               locked: false,
               materials: [
                 {
                   id: 2,
-                  type: 'exercise',
-                  title: 'Lists and Dictionaries',
-                  description: 'Practice with Python collections',
-                  duration: '3 hours',
-                  url: '/course/python/collections'
+                  type: "tutorial",
+                  title: "Key Principles",
+                  description: "Learn the essential concepts",
+                  duration: "2 hours",
+                  url: `/course/${courseId}/lecture/2`
                 }
               ]
-            }
-          ]
-        },
-        2: {
-          id: 2,
-          title: 'Web Development Path',
-          description: 'Master web development fundamentals and modern frameworks',
-          completedSteps: 2,
-          totalSteps: 6,
-          milestones: [
+            },
             {
-              id: 1,
-              title: 'HTML & CSS',
-              description: 'Learn the basics of web development',
-              status: 'completed',
-              estimatedTime: '2 weeks',
-              locked: false,
+              id: 3,
+              title: "Advanced Topics",
+              description: "Deepen your understanding with advanced material",
+              status: "locked",
+              estimatedTime: "3 weeks",
+              locked: true,
               materials: [
                 {
-                  id: 1,
-                  type: 'video',
-                  title: 'HTML Fundamentals',
-                  description: 'Get started with HTML5',
-                  duration: '2 hours',
-                  url: '/course/web/html'
+                  id: 3,
+                  type: "project",
+                  title: "Practical Application",
+                  description: "Apply what you've learned",
+                  duration: "5 hours",
+                  url: `/course/${courseId}/lecture/3`
                 }
               ]
             }
-          ]
-        },
-        3: {
-          id: 3,
-          title: 'Machine Learning Path',
-          description: 'Learn machine learning concepts and practical applications',
-          completedSteps: 1,
-          totalSteps: 10,
-          milestones: [
-            {
-              id: 1,
-              title: 'ML Foundations',
-              description: 'Understanding machine learning basics',
-              status: 'in_progress',
-              estimatedTime: '4 weeks',
-              locked: false,
-              materials: [
-                {
-                  id: 1,
-                  type: 'course',
-                  title: 'Introduction to ML',
-                  description: 'Basic concepts and terminology',
-                  duration: '4 hours',
-                  url: '/course/ml/intro'
-                }
-              ]
-            }
-          ]
-        }
+          ];
+      }
+      
+      this.roadmap = mockTemplate;
+      
+      // Set context for chat based on mock data
+      this.currentLearningContext = {
+        type: 'roadmap',
+        title: this.roadmap.title,
+        description: this.roadmap.description,
+        courseId: this.id
       };
       
-      this.roadmap = mockRoadmaps[this.id] || null;
-      if (!this.roadmap) {
-        this.error = 'Roadmap not found';
-        this.toast.error('Could not load roadmap, using mock data instead');
+      if (this.error) {
+        this.toast.error('Could not load roadmap from server. Using mock data instead.');
       } else {
-        this.toast.info('Using mock roadmap data');
+        this.toast.info('Using sample roadmap data');
       }
     },
     getMilestoneStatusClasses(status) {
@@ -469,12 +645,22 @@ export default {
       // Show the chat panel when starting a new material
       this.showChat = true;
       
+      // Extract the lecture ID from the URL if it's in the format "/course/{courseId}/lecture/{lectureId}"
+      let lectureId = 1; // Default lecture ID
+      
+      if (material.url) {
+        const match = material.url.match(/\/lecture\/(\d+)/);
+        if (match && match[1]) {
+          lectureId = parseInt(match[1]);
+        }
+      }
+      
       // Navigate to the course lecture view
       this.$router.push({
         name: 'CourseLectureView',
         params: { 
           courseId: this.id,
-          materialId: material.id
+          lectureId: lectureId
         }
       });
     },

@@ -57,8 +57,13 @@ const userRoutes = {
         {
             path: 'roadmap/:id',
             name: 'roadmap',
-            component: RoadmapView,
-            props: true,
+            redirect: to => {
+                // Redirect to dashboard with a message about roadmaps being under development
+                return { 
+                    path: '/user/dashboard', 
+                    query: { message: 'roadmap-unavailable' } 
+                }
+            },
             meta: {
                 title: 'Learning Roadmap',
                 hideNavbar: false,

@@ -6,7 +6,7 @@ from fastapi import UploadFile, HTTPException
 from sqlalchemy.ext.asyncio import AsyncSession
 from sqlalchemy.future import select
 from sqlalchemy import and_, or_
-from app.models.assignment import Assignment, Submission
+from app.models.assignment import Assignment, AssignmentSubmission
 from app.config import settings
 import difflib
 import hashlib
@@ -394,10 +394,10 @@ class AssignmentService:
         
         # Check if student already has a submission for this assignment
         result = await db.execute(
-            select(Submission).filter(
+            select(AssignmentSubmission).filter(
                 and_(
-                    Submission.assignment_id == assignment_id,
-                    Submission.student_id == student_id
+                    AssignmentSubmission.assignment_id == assignment_id,
+                    AssignmentSubmission.student_id == student_id
                 )
             )
         )
@@ -475,7 +475,7 @@ class AssignmentService:
             return existing_submission
         
         # Otherwise, create a new submission
-        submission = Submission(
+        submission = AssignmentSubmission(
             assignment_id=assignment_id,
             student_id=student_id,
             **submission_data
@@ -537,7 +537,7 @@ class AssignmentService:
         Returns:
             The submission or None if not found
         """
-        result = await db.execute(select(Submission).filter(Submission.id == submission_id))
+        result = await db.execute(select(AssignmentSubmission).filter(AssignmentSubmission.id == submission_id))
         return result.scalars().first()
     
     @staticmethod
@@ -553,9 +553,9 @@ class AssignmentService:
             List of submissions
         """
         result = await db.execute(
-            select(Submission)
-            .filter(Submission.assignment_id == assignment_id)
-            .order_by(Submission.submitted_at.desc())
+            select(AssignmentSubmission)
+            .filter(AssignmentSubmission.assignment_id == assignment_id)
+            .order_by(AssignmentSubmission.submitted_at.desc())
         )
         return result.scalars().all()
     
@@ -573,10 +573,10 @@ class AssignmentService:
             The submission or None if not found
         """
         result = await db.execute(
-            select(Submission).filter(
+            select(AssignmentSubmission).filter(
                 and_(
-                    Submission.assignment_id == assignment_id,
-                    Submission.student_id == student_id
+                    AssignmentSubmission.assignment_id == assignment_id,
+                    AssignmentSubmission.student_id == student_id
                 )
             )
         )
@@ -601,7 +601,7 @@ class AssignmentService:
         Returns:
             The graded submission
         """
-        result = await db.execute(select(Submission).filter(Submission.id == submission_id))
+        result = await db.execute(select(AssignmentSubmission).filter(AssignmentSubmission.id == submission_id))
         submission = result.scalars().first()
         
         if not submission:
@@ -620,7 +620,7 @@ class AssignmentService:
         return submission
     
     @staticmethod
-    async def check_plagiarism(db: AsyncSession, submission: Submission):
+    async def check_plagiarism(db: AsyncSession, submission: AssignmentSubmission):
         """
         Check a submission for plagiarism.
         
@@ -633,11 +633,11 @@ class AssignmentService:
         """
         # Get all other submissions for this assignment
         result = await db.execute(
-            select(Submission).filter(
+            select(AssignmentSubmission).filter(
                 and_(
-                    Submission.assignment_id == submission.assignment_id,
-                    Submission.id != submission.id,
-                    Submission.status == "submitted"
+                    AssignmentSubmission.assignment_id == submission.assignment_id,
+                    AssignmentSubmission.id != submission.id,
+                    AssignmentSubmission.status == "submitted"
                 )
             )
         )

@@ -86,7 +86,7 @@ class Assignment(Base):
                      comment="Additional settings as JSON")
 
     # Relationships
-    submissions = relationship("Submission", back_populates="assignment", cascade="all, delete-orphan")
+    submissions = relationship("AssignmentSubmission", back_populates="assignment", cascade="all, delete-orphan")
     creator = relationship("User", foreign_keys=[created_by])
     course = relationship("Course", back_populates="assignments")
 
@@ -97,9 +97,9 @@ class Assignment(Base):
         return self.__str__()
 
 
-class Submission(Base):
+class AssignmentSubmission(Base):
     """
-    Submission model representing student submissions for assignments.
+    AssignmentSubmission model representing student submissions for assignments.
     
     This model stores submission data including files, text content, and grading information.
     

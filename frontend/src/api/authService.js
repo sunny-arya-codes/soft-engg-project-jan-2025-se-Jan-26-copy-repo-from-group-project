@@ -200,6 +200,14 @@ export const authService = {
     // Get current user
     async getCurrentUser() {
         try {
+            // Clear cache if userRole in localStorage doesn't match cached data
+            const localStorageRole = localStorage.getItem('userRole');
+            if (this._cachedUserData && localStorageRole && 
+                this._cachedUserData.role !== localStorageRole) {
+                console.log(`getCurrentUser: Clearing mismatched cached data. Cache role: "${this._cachedUserData.role}", localStorage role: "${localStorageRole}"`);
+                this._cachedUserData = null;
+            }
+            
             // Check if we already have the user data in cache
             if (this._cachedUserData) {
                 logger.debug('Returning cached user data');
@@ -215,6 +223,7 @@ export const authService = {
             
             // Get role from localStorage
             const userRole = localStorage.getItem('userRole') || 'STUDENT';
+            console.log(`getCurrentUser: Retrieved role from localStorage: "${userRole}"`);
             
             // Create a simple user object from localStorage data
             const userData = {
@@ -227,6 +236,7 @@ export const authService = {
             };
 
             logger.debug('Created user data from localStorage:', userData);
+            console.log(`getCurrentUser: Returning user data with role: "${userData.role}"`);
             
             // Cache the user data for subsequent calls
             this._cachedUserData = userData;
@@ -300,6 +310,11 @@ export const authService = {
             // Clear token from browser
             localStorage.removeItem('token');
             localStorage.removeItem('userRole');
+            localStorage.removeItem('userName');
+            localStorage.removeItem('userEmail');
+            
+            // Explicitly clear cache
+            console.log('Clearing cached user data on logout');
             this._cachedUserData = null;
             
             // Call backend to invalidate token
@@ -312,6 +327,8 @@ export const authService = {
             // Force logout even if the API call fails
             localStorage.removeItem('user');
             localStorage.removeItem('token');
+            localStorage.removeItem('userRole');
+            this._cachedUserData = null;
             window.location.href = '/';
             return false;
         }
@@ -447,14 +464,22 @@ export const authService = {
             const userRoleLower = userRole.toLowerCase();
             const requiredRoleLower = role.toLowerCase();
             
-            // If user is admin, they have access to everything
-            if (userRoleLower === 'admin') {
+            // Direct match - return true
+            if (userRoleLower === requiredRoleLower) {
+                logger.debug(`Role check: direct match ${userRoleLower} === ${requiredRoleLower}`);
+                return true;
+            }
+            
+            // If user is admin or support, they have access to everything
+            if (userRoleLower === 'admin' || userRoleLower === 'support') {
+                logger.debug(`Role check: admin/support role has access to ${requiredRoleLower}`);
                 return true;
             }
             
             // Role hierarchy for fallback
             const roleHierarchy = {
-                admin: 4,
+                admin: 5,
+                support: 4,
                 faculty: 3,
                 teaching_assistant: 2,
                 student: 1,
@@ -482,7 +507,7 @@ export const authService = {
             const userRole = localStorage.getItem('userRole');
             if (!userRole) return false;
             
-            const supportRoles = ['ADMIN', 'FACULTY', 'TEACHING_ASSISTANT'];
+            const supportRoles = ['ADMIN', 'SUPPORT', 'FACULTY', 'TEACHING_ASSISTANT'];
             return supportRoles.includes(userRole.toUpperCase());
         } catch (error) {
             logger.error('Error checking support role:', error);

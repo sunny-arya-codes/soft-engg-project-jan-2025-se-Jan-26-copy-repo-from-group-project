@@ -41,7 +41,16 @@ class LectureTranscriptionService:
                 google_api_key=self.api_key,
                 temperature=0.2
             )
-            logger.info("Gemini model initialized successfully for lecture services")
+            
+            # Initialize Gemini model with web search capabilities
+            self.gemini_with_search = ChatGoogleGenerativeAI(
+                model="gemini-1.5-pro",
+                google_api_key=self.api_key,
+                temperature=0.2,
+                additional_tools=["web_search"]
+            )
+            
+            logger.info("Gemini models initialized successfully for lecture services")
         except Exception as e:
             logger.error(f"Failed to initialize Gemini model: {str(e)}")
             raise
@@ -381,81 +390,227 @@ Your list should capture the essence of what a student should take away from thi
     async def generate_learning_resources(self, transcription: str) -> list:
         """
         Generate recommended learning resources based on the lecture transcription.
+        Uses Gemini with web search capabilities to find real resources.
         
         Args:
             transcription: The lecture transcription text
             
         Returns:
-            A list of dictionaries containing resource information
+            A list of dictionaries containing resource information with real URLs
         """
         if not transcription:
             raise ValueError("Transcription is required for resources generation")
         
         try:
-            # Construct the prompt for Gemini
-            system_prompt = self._build_resources_prompt()
+            # Extract key topics from the transcription for targeted searches
+            key_topics = await self._extract_key_topics(transcription)
             
-            # Send to Gemini
-            response = await self.gemini.ainvoke(
+            # Construct the prompt for Gemini with web search
+            system_prompt = self._build_resources_prompt_with_search()
+            
+            # Create input for Gemini that includes both transcription summary and key topics
+            transcription_summary = transcription[:1000] + "..." if len(transcription) > 1000 else transcription
+            user_input = f"""Transcription Summary: {transcription_summary}
+            
+Key Topics to Research:
+{' '.join(key_topics)}
+
+Please research and find real, accessible learning resources (articles, videos, books, tools, courses) 
+relevant to these topics that would help students understand the lecture material better."""
+            
+            # Send to Gemini with web search capability
+            response = await self.gemini_with_search.ainvoke(
                 [
                     {"role": "system", "content": system_prompt},
-                    {"role": "user", "content": transcription}
+                    {"role": "user", "content": user_input}
                 ]
             )
             
             # Parse the response to extract the resources
             resources_text = response.content.strip()
             
-            # For simplicity, we'll generate some structured resources
-            # In a real implementation, you'd parse the AI response more carefully
-            lines = [line.strip() for line in resources_text.split('\n') if line.strip()]
-            
-            resources = []
-            current_resource = None
-            
-            for line in lines:
-                # Check if this line is a new resource (starts with a type indicator)
-                if any(line.lower().startswith(prefix) for prefix in ["article:", "video:", "book:", "paper:", "tool:"]):
-                    # Save previous resource if exists
-                    if current_resource:
-                        resources.append(current_resource)
-                    
-                    # Start a new resource
-                    parts = line.split(':', 1)
-                    resource_type = parts[0].lower().strip()
-                    title = parts[1].strip() if len(parts) > 1 else "Untitled"
-                    
-                    current_resource = {
-                        "type": resource_type,
-                        "title": title,
-                        "description": ""
-                    }
-                elif current_resource:
-                    # Add to description of current resource
-                    current_resource["description"] += line + " "
-            
-            # Add the last resource if exists
-            if current_resource:
-                resources.append(current_resource)
+            # Better parsing for resources with URLs
+            resources = self._parse_resources_with_urls(resources_text)
             
             # Ensure we have some resources
             if not resources:
-                # Create some default resources
-                resources = self._generate_default_resources()
-            
-            # Clean up descriptions
-            for resource in resources:
-                if "description" in resource:
-                    resource["description"] = resource["description"].strip()
+                # Try one more time with a simpler prompt
+                retry_response = await self.gemini_with_search.ainvoke(
+                    [
+                        {"role": "system", "content": self._build_simple_resources_prompt()},
+                        {"role": "user", "content": f"Find learning resources about: {' '.join(key_topics[:3])}"}
+                    ]
+                )
+                resources = self._parse_resources_with_urls(retry_response.content.strip())
+                
+                if not resources:
+                    # Create some default resources
+                    resources = self._generate_default_resources()
             
             # Limit to at most 5 resources
             return resources[:5]
             
         except Exception as e:
-            logger.error(f"Failed to generate learning resources: {str(e)}")
+            logger.error(f"Failed to generate learning resources with web search: {str(e)}")
             
             # Return some default resources as fallback
             return self._generate_default_resources()
+    
+    async def _extract_key_topics(self, transcription: str) -> list:
+        """
+        Extract key topics from transcription for targeted web searches.
+        
+        Args:
+            transcription: The lecture transcription text
+            
+        Returns:
+            List of key topics for research
+        """
+        try:
+            # Use Gemini to extract key topics
+            response = await self.gemini.ainvoke(
+                [
+                    {"role": "system", "content": "Extract 3-5 key research topics from this lecture transcription. Return only a simple list of topics, one per line, with no numbers or bullets."},
+                    {"role": "user", "content": transcription}
+                ]
+            )
+            
+            # Parse topics
+            topics = [topic.strip() for topic in response.content.strip().split('\n') if topic.strip()]
+            
+            # Return limited list of topics
+            return topics[:5]
+        except Exception as e:
+            logger.error(f"Failed to extract key topics: {str(e)}")
+            # Return generic topics
+            return ["lecture topic", "academic resources", "learning materials"]
+    
+    def _parse_resources_with_urls(self, resources_text: str) -> list:
+        """
+        Parse response text to extract resources with URLs.
+        
+        Args:
+            resources_text: Text response from Gemini
+            
+        Returns:
+            List of resource dictionaries with URLs
+        """
+        lines = [line.strip() for line in resources_text.split('\n') if line.strip()]
+        
+        resources = []
+        current_resource = None
+        url_pattern = r'https?://(?:[-\w.]|(?:%[\da-fA-F]{2}))+[^\s]*'
+        
+        for line in lines:
+            # Check if this line is a new resource (starts with a type indicator)
+            if any(line.lower().startswith(prefix) for prefix in ["article:", "video:", "book:", "paper:", "tool:", "course:"]):
+                # Save previous resource if exists
+                if current_resource:
+                    resources.append(current_resource)
+                
+                # Start a new resource
+                parts = line.split(':', 1)
+                resource_type = parts[0].lower().strip()
+                title = parts[1].strip() if len(parts) > 1 else "Untitled"
+                
+                current_resource = {
+                    "type": resource_type,
+                    "title": title,
+                    "description": "",
+                    "url": ""
+                }
+            elif current_resource:
+                # Check if line contains a URL
+                url_match = re.search(url_pattern, line)
+                if url_match and not current_resource["url"]:
+                    current_resource["url"] = url_match.group(0)
+                    # Remove the URL from the line for description
+                    line = re.sub(url_pattern, '', line).strip()
+                
+                # Add to description if there's content left
+                if line:
+                    current_resource["description"] += line + " "
+        
+        # Add the last resource if exists
+        if current_resource:
+            resources.append(current_resource)
+        
+        # Clean up descriptions and ensure all resources have required fields
+        valid_resources = []
+        for resource in resources:
+            if "description" in resource:
+                resource["description"] = resource["description"].strip()
+            
+            if not resource.get("url"):
+                # Try to extract URL from description if not found separately
+                url_match = re.search(url_pattern, resource.get("description", ""))
+                if url_match:
+                    resource["url"] = url_match.group(0)
+                    # Clean description
+                    resource["description"] = re.sub(url_pattern, '', resource["description"]).strip()
+                else:
+                    # Add placeholder URL
+                    resource["url"] = "#"
+            
+            valid_resources.append(resource)
+        
+        return valid_resources
+    
+    def _build_resources_prompt_with_search(self) -> str:
+        """
+        Build the system prompt for Gemini with web search to recommend learning resources.
+        
+        Returns:
+            A string containing the system prompt for Gemini
+        """
+        return """You are LearningResourceCurator, an AI specialized in finding real, high-quality educational resources
+using web search to complement lecture content.
+
+Your task is to analyze the lecture topics and use web search to find 3-5 relevant, REAL learning 
+resources that would enhance the student's understanding of the topic.
+
+For each resource, you MUST provide:
+1. The type of resource (Article, Video, Book, Paper, Tool, Course)
+2. A concise, descriptive title
+3. The ACTUAL URL where the resource can be accessed
+4. A brief description (1-2 sentences) explaining why it's relevant
+
+Format each resource as follows:
+[TYPE]: [TITLE]
+[URL]
+[DESCRIPTION]
+
+Resource selection guidelines:
+- Include a mix of resource types (not just all videos or all articles)
+- Focus on resources from reputable academic sources or established platforms
+- Ensure all URLs are real, complete and directly accessible
+- Include both introductory and more advanced resources when appropriate
+- Prioritize resources that are freely accessible when possible
+- Verify the URL actually exists by searching for it
+
+IMPORTANT: Do NOT create fictional resources or URLs. All recommendations must be REAL resources
+you discovered through web search that actually exist and are relevant to the lecture topics.
+"""
+
+    def _build_simple_resources_prompt(self) -> str:
+        """
+        Build a simpler system prompt for retrying resource generation.
+        
+        Returns:
+            A string containing a simplified system prompt
+        """
+        return """Find 3-5 real learning resources on the specified topic. For each resource, provide:
+1. Resource type (Article, Video, etc.)
+2. Title
+3. URL (must be real)
+4. Brief description
+
+Format: 
+[TYPE]: [TITLE]
+[URL]
+[DESCRIPTION]
+
+ONLY provide real resources with working URLs that you can verify through search."""
     
     def _generate_default_resources(self) -> list:
         """
@@ -481,46 +636,6 @@ Your list should capture the essence of what a student should take away from thi
                 "description": "A comprehensive textbook that provides in-depth coverage of all topics mentioned in the lecture."
             }
         ]
-    
-    def _build_resources_prompt(self) -> str:
-        """
-        Build the system prompt for Gemini to recommend learning resources.
-        
-        Returns:
-            A string containing the system prompt for Gemini
-        """
-        return """You are ResourceCurator, an AI specialized in recommending high-quality educational resources based on lecture content.
-
-Your task is to analyze the lecture transcription and suggest 3-5 relevant learning resources that would complement and enhance the student's understanding of the topic.
-
-For each resource, provide:
-1. The type of resource (e.g., Article, Video, Book, Paper, Tool)
-2. A concise, descriptive title
-3. A brief description (1-2 sentences) explaining why it's relevant
-
-Format each resource as follows:
-[TYPE]: [TITLE]
-[DESCRIPTION]
-
-Examples:
-Article: Understanding Neural Networks: A Visual Approach
-An accessible explanation of neural network architecture with helpful diagrams for visual learners.
-
-Video: MIT OpenCourseWare: Introduction to Algorithms
-Professor John Smith's renowned lecture series covering the algorithms mentioned in this lecture with practical examples.
-
-Tool: Interactive Probability Simulator
-Online tool that allows students to experiment with the statistical concepts covered in the lecture.
-
-Focus on recommending:
-- A mix of resource types (not just all videos or all articles)
-- Resources appropriate for the academic level implied by the lecture
-- Both introductory and advanced resources when appropriate
-- Practical tools or exercises where relevant
-- Classic or authoritative sources in the field
-
-Your recommendations should be fictional but realistic - do not reference specific URLs, publication dates, or real authors.
-"""
 
 # Create a singleton instance
 lecture_transcription_service = LectureTranscriptionService() 

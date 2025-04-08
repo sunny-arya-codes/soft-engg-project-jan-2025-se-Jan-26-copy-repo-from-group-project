@@ -9,11 +9,85 @@ from langchain_core.messages import SystemMessage, HumanMessage, AIMessage
 from langchain_google_genai import ChatGoogleGenerativeAI
 from langchain_core.prompts import ChatPromptTemplate, MessagesPlaceholder
 from app.services.function_router import function_router
+import asyncio
+import aiohttp
+import backoff
+from app.models.user import User
+from app.config import settings
 
 logger = logging.getLogger(__name__)
 
 # Available models cache to avoid repeated API calls
 _available_models_cache = None
+
+# Gemini API configuration
+GEMINI_API_KEY = settings.GOOGLE_API_KEY
+GEMINI_API_URL = "https://generativelanguage.googleapis.com/v1beta/models/gemini-1.5-pro:generateContent"
+GEMINI_MODEL = "gemini-2.5-pro-exp"
+
+INSIGHT_PROMPT_TEMPLATE = """
+You are an AI learning analytics expert integrated into an educational platform. Your task is to analyze a student's learning data and provide personalized insights to help improve their learning outcomes.
+
+## User Information
+- Name: {name}
+- Email: {email}
+
+## Learning Data (JSON format)
+```json
+{data}
+```
+
+## Instructions
+Analyze the provided learning data to generate personalized insights. Focus on:
+1. Study patterns (when and how they learn best)
+2. Content preferences
+3. Strengths and weaknesses
+4. Specific improvement recommendations
+5. Learning opportunities tailored to their needs
+
+## Response Format
+Return a JSON object with the following structure:
+```json
+{
+  "studyPatterns": {
+    "optimalTime": "String describing when they learn best",
+    "preferredContent": "String describing content they engage with most",
+    "recommendedSchedule": "String with specific time suggestions"
+  },
+  "suggestions": {
+    "contentType": "String with recommended content type to focus on",
+    "reason": "String explaining why this content type is recommended",
+    "topic": "String with a specific topic to focus on (if applicable)"
+  },
+  "opportunities": [
+    {
+      "type": "String (quiz, review, practice, etc.)",
+      "subject": "String with specific subject",
+      "reason": "String explaining why this opportunity is valuable"
+    },
+    {
+      "type": "String (quiz, review, practice, etc.)",
+      "subject": "String with specific subject",
+      "reason": "String explaining why this opportunity is valuable"
+    }
+  ],
+  "statistics": {
+    "completionRate": Number,
+    "quizAverage": Number,
+    "activeLastMonth": Number,
+    "strengthTopics": [String topics they excel at]
+  }
+}
+```
+
+Important guidelines:
+- Make insights actionable, specific, and personalized
+- Base all insights on the actual data provided
+- Use a professional, encouraging tone
+- Do not reference your own capabilities or that you are an AI
+- Focus only on providing the JSON output without any other text
+
+"""
 
 def get_available_models():
     """Get a list of available models from the Gemini API"""
@@ -811,3 +885,129 @@ async def create_llm_app(app):
     
     logger.info("LLM application initialized successfully")
     return llm_app
+
+@backoff.on_exception(
+    backoff.expo,
+    (aiohttp.ClientError, asyncio.TimeoutError),
+    max_tries=3,
+    max_time=30
+)
+async def generate_learning_insights(user: User, data: Dict[str, Any]) -> Optional[Dict[str, Any]]:
+    """
+    Generate enhanced learning insights using the Gemini API
+    
+    Args:
+        user: User object
+        data: Dictionary containing user learning analytics data
+        
+    Returns:
+        Dict containing AI-generated learning insights or None if generation fails
+    """
+    if not GEMINI_API_KEY:
+        logger.warning("Gemini API key not configured, skipping enhanced insights generation")
+        return None
+    
+    try:
+        # Format the prompt with user data
+        prompt = INSIGHT_PROMPT_TEMPLATE.format(
+            name=user.name or "Student",
+            email=user.email,
+            data=json.dumps(data, default=str)
+        )
+        
+        # Create request payload
+        payload = {
+            "contents": [
+                {
+                    "parts": [
+                        {
+                            "text": prompt
+                        }
+                    ]
+                }
+            ],
+            "generationConfig": {
+                "temperature": 0.2,
+                "topP": 0.8,
+                "topK": 40,
+                "maxOutputTokens": 2048,
+                "responseMimeType": "application/json"
+            }
+        }
+        
+        # Send request to Gemini API
+        headers = {
+            "Content-Type": "application/json",
+            "x-goog-api-key": GEMINI_API_KEY
+        }
+        
+        url = f"{GEMINI_API_URL}?key={GEMINI_API_KEY}"
+        
+        async with aiohttp.ClientSession() as session:
+            async with session.post(
+                url,
+                headers=headers,
+                json=payload,
+                timeout=30
+            ) as response:
+                # Check for successful response
+                if response.status != 200:
+                    error_text = await response.text()
+                    logger.error(f"Gemini API error: {response.status}, {error_text}")
+                    return None
+                
+                # Parse the response
+                response_data = await response.json()
+                
+                # Extract the content from the response
+                if "candidates" in response_data and response_data["candidates"]:
+                    candidate = response_data["candidates"][0]
+                    if "content" in candidate and candidate["content"]["parts"]:
+                        # Extract the JSON text from the response
+                        result_text = candidate["content"]["parts"][0]["text"]
+                        
+                        # Try to parse the JSON (clean it if necessary)
+                        try:
+                            # Clean up the text to extract just the JSON part
+                            json_text = result_text.strip()
+                            if json_text.startswith("```json"):
+                                json_text = json_text.split("```json", 1)[1]
+                            if "```" in json_text:
+                                json_text = json_text.split("```", 1)[0]
+                            
+                            json_text = json_text.strip()
+                            insights = json.loads(json_text)
+                            
+                            # Validate the response format
+                            if not all(key in insights for key in ["studyPatterns", "suggestions", "opportunities"]):
+                                logger.warning("Gemini response missing required fields")
+                                return None
+                            
+                            logger.info(f"Successfully generated enhanced learning insights for user {user.id}")
+                            return insights
+                        except json.JSONDecodeError as e:
+                            logger.error(f"Failed to parse JSON from Gemini response: {e}")
+                            logger.debug(f"Raw response text: {result_text}")
+                            return None
+                
+                logger.warning("Unexpected Gemini API response format")
+                return None
+                
+    except Exception as e:
+        logger.error(f"Error generating insights with Gemini: {str(e)}")
+        return None
+
+# Additional LLM utility functions can be added here
+async def summarize_lecture_text(text: str, max_length: int = 1000) -> Optional[str]:
+    """
+    Summarize lecture text using Gemini API (placeholder for implementation)
+    """
+    # Implementation would be similar to generate_learning_insights but with different prompt
+    pass
+
+async def generate_quiz_questions(topic: str, difficulty: str, count: int = 5) -> Optional[List[Dict[str, Any]]]:
+    """
+    Generate quiz questions for a given topic using Gemini API (placeholder for implementation)
+    """
+    # Implementation would be similar to generate_learning_insights but with different prompt
+    pass

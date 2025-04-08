@@ -161,7 +161,18 @@ export default {
     const isPublicRoute = computed(() => {
       const publicRoutes = ['/', '/login', '/register', '/forgot-password', '/reset-password', 
                           '/auth-callback', '/about', '/contact', '/help', '/faq']
-      return publicRoutes.includes(route.path)
+      // Ensure it's not hidden on course pages or lecture pages
+      const currentPath = route.path
+      const isCourseOrLecturePage = currentPath.includes('/user/courses') || 
+                                   currentPath.includes('/user/course/') || 
+                                   currentPath.includes('/lecture/')
+      
+      // If it's a course or lecture page, we definitely want to show the chat
+      if (isCourseOrLecturePage) {
+        return false
+      }
+      
+      return publicRoutes.includes(currentPath)
     })
     
     // Check if we're on the user dashboard
@@ -347,6 +358,18 @@ export default {
         // Make sure chat store is initialized
         if (!chatStore.initialized) {
           chatStore.initialize()
+        }
+        
+        // Auto-initialize chat if on a course or lecture page
+        if (route.path.includes('/user/courses') || route.path.includes('/user/course/') || route.path.includes('/lecture/')) {
+          // Initialize but don't automatically open
+          if (!chatStore.initialized) {
+            chatStore.initialize()
+          }
+          // Set a timeout to ensure the chat button is visible after page load
+          setTimeout(() => {
+            shouldShowButton.value = true
+          }, 500)
         }
         
         // Check if AI can use functions

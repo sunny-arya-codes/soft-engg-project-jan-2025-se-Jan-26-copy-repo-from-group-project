@@ -32,9 +32,15 @@ class SmartNotesResponse(BaseModel):
     
 class KeyConceptResponse(BaseModel):
     concepts: List[str]
+
+class Resource(BaseModel):
+    type: str
+    title: str
+    description: str
+    url: Optional[str] = "#"
     
 class ResourceResponse(BaseModel):
-    resources: List[Dict[str, Any]]
+    resources: List[Resource]
 
 # API Routes for lecture resources
 @router.get("/courses/{course_id}/lectures/{lecture_id}/transcription",

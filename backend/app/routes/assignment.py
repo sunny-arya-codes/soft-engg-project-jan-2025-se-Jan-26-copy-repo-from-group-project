@@ -2,7 +2,7 @@ from fastapi import APIRouter, Depends, HTTPException, UploadFile, File, Form, Q
 from fastapi.responses import JSONResponse, FileResponse
 from sqlalchemy.ext.asyncio import AsyncSession
 from app.database import get_db
-from app.models.assignment import Assignment, Submission
+from app.models.assignment import Assignment, AssignmentSubmission
 from app.services.assignment_service import AssignmentService, get_file_url
 from app.services.auth_service import get_current_user, get_current_faculty
 from typing import List, Optional

@@ -304,8 +304,13 @@ export default {
             return;
           }
           
+          // Get user role directly from localStorage after login for the most up-to-date value
+          // This avoids issues with stale cached data from previous sessions
+          const freshUserRole = localStorage.getItem('userRole');
+          console.log(`LOGIN: Fresh userRole from localStorage: "${freshUserRole}"`);
+          
           // Get user role - userData.role is already normalized to uppercase in getCurrentUser
-          const userRole = userData.role; 
+          const userRole = freshUserRole || userData.role; 
           
           // Debug info to troubleshoot role issues
           console.log(`LOGIN: User data from getCurrentUser:`, userData);
@@ -316,20 +321,27 @@ export default {
           try {
             // Force refresh the auth store with latest user data
             const authStore = useAuthStore();
-            authStore.setUser(userData);
+            
+            // Explicitly update user role from localStorage
+            if (freshUserRole) {
+              console.log(`LOGIN: Explicitly setting authStore userRole to "${freshUserRole}"`);
+              authStore.setUserRole(freshUserRole);
+            } else {
+              authStore.setUser(userData);
+            }
             
             let dashboardPath;
             
             // Use exact string comparison for safety
             if (userRole === 'FACULTY') {
-              dashboardPath = '/faculty/dashboard';
+              dashboardPath = rolePaths.FACULTY.dashboard;
               console.log('Directing faculty to faculty dashboard');
             } else if (userRole === 'SUPPORT') {
-              dashboardPath = '/support/dashboard';
+              dashboardPath = rolePaths.SUPPORT.dashboard;
               console.log('Directing support to support dashboard');
             } else {
               // Default to student dashboard
-              dashboardPath = '/user/dashboard';
+              dashboardPath = rolePaths.STUDENT.dashboard;
               console.log('Directing to student dashboard (default)');
             }
             
