@@ -163,12 +163,18 @@ export default {
                           '/auth-callback', '/about', '/contact', '/help', '/faq']
       // Ensure it's not hidden on course pages or lecture pages
       const currentPath = route.path
+      
+      // Allow chat on user courses, lectures, support dashboard, and faculty dashboard
       const isCourseOrLecturePage = currentPath.includes('/user/courses') || 
                                    currentPath.includes('/user/course/') || 
                                    currentPath.includes('/lecture/')
       
-      // If it's a course or lecture page, we definitely want to show the chat
-      if (isCourseOrLecturePage) {
+      // Also show chat on support and faculty dashboards
+      const isSupportPage = currentPath.includes('/support/')
+      const isFacultyPage = currentPath.includes('/faculty/')
+      
+      // If it's a course, lecture page, support page, or faculty page, we want to show the chat
+      if (isCourseOrLecturePage || isSupportPage || isFacultyPage) {
         return false
       }
       
@@ -177,6 +183,12 @@ export default {
     
     // Check if we're on the user dashboard
     const isUserDashboard = computed(() => route.path === '/user/dashboard')
+
+    // Check if we're on any dashboard
+    const isAnyDashboard = computed(() => {
+      const dashboardPaths = ['/user/dashboard', '/faculty/dashboard', '/support/dashboard']
+      return dashboardPaths.includes(route.path)
+    })
 
     // Chat title handling
     const chatTitle = computed(() => {
@@ -296,9 +308,15 @@ export default {
 
     // Update button visibility based on current route
     const updateButtonVisibility = () => {
-      if (isUserDashboard.value) {
+      // For dashboard pages, we need special handling
+      if (route.path === '/user/dashboard') {
+        // Only hide on the student dashboard
         shouldShowButton.value = false
+      } else if (route.path === '/faculty/dashboard' || route.path === '/support/dashboard') {
+        // Explicitly ensure button is shown on faculty and support dashboards
+        shouldShowButton.value = true
       } else {
+        // For all other pages
         shouldShowButton.value = true
       }
     }
@@ -360,8 +378,13 @@ export default {
           chatStore.initialize()
         }
         
-        // Auto-initialize chat if on a course or lecture page
-        if (route.path.includes('/user/courses') || route.path.includes('/user/course/') || route.path.includes('/lecture/')) {
+        // Auto-initialize chat if on a relevant page
+        const currentPath = route.path
+        if (currentPath.includes('/user/courses') || 
+            currentPath.includes('/user/course/') || 
+            currentPath.includes('/lecture/') ||
+            currentPath.includes('/support/') ||
+            currentPath.includes('/faculty/')) {
           // Initialize but don't automatically open
           if (!chatStore.initialized) {
             chatStore.initialize()
@@ -394,6 +417,7 @@ export default {
       isAuthenticated,
       isPublicRoute,
       isUserDashboard,
+      isAnyDashboard,
       chatTitle,
       
       // Methods
