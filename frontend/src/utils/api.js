@@ -1,24 +1,59 @@
 import axios from 'axios'
-import router from '@/router'
-import { API_URL } from '@/config'
+import useAuthStore from '@/stores/useAuthStore'
 
-// Create custom axios instance with the base URL
+// Determine the base URL for API requests
+let baseURL = ''
+
+// Check environment
+if (process.env.NODE_ENV === 'production') {
+  // Use the production API URL
+  baseURL = '/api/v1'
+} else {
+  // Use local development server
+  baseURL = 'http://localhost:8000/api/v1'
+}
+
+// Create an axios instance with the base URL
 const api = axios.create({
-  baseURL: API_URL,
-  timeout: 60000, // Increase timeout to 60 seconds
+  baseURL,
+  timeout: 30000, // 30 seconds
   headers: {
     'Content-Type': 'application/json',
     'Accept': 'application/json'
   }
 })
 
-// Request interceptor - add auth token to requests
+// Add a request interceptor to add the auth token to requests
 api.interceptors.request.use(
   config => {
-    // Add authorization token if available
-    const token = localStorage.getItem('token')
+    // Get the auth token from the store or localStorage
+    const authStore = useAuthStore()
+    let token = authStore.token
+    
+    // If token not in store, try localStorage directly
+    if (!token) {
+      token = localStorage.getItem('token')
+    }
+
+    // If token exists, process it and add to headers
     if (token) {
-      config.headers['Authorization'] = `Bearer ${token}`
+      // Clean up token - remove quotes if JSON stringified
+      let cleanToken = token
+      
+      if (typeof cleanToken === 'string') {
+        // Remove JSON quotes if present
+        cleanToken = cleanToken.replace(/^"|"$/g, '')
+        
+        // Remove Bearer prefix if already included
+        if (cleanToken.startsWith('Bearer ')) {
+          cleanToken = cleanToken.substring(7)
+        }
+      }
+      
+      config.headers['Authorization'] = `Bearer ${cleanToken}`
+      console.log(`Adding token to ${config.url}: Bearer ${cleanToken.substring(0, 10)}...`)
+    } else {
+      console.warn(`No auth token found for request to: ${config.url}`)
     }
 
     // Add a timestamp to prevent caching issues for GET requests
@@ -40,53 +75,27 @@ api.interceptors.request.use(
     return config
   },
   error => {
-    console.error('Request error:', error)
     return Promise.reject(error)
   }
 )
 
-// Response interceptor - handle common errors
+// Add a response interceptor for error handling
 api.interceptors.response.use(
   response => response,
-  async error => {
-    console.error('API error:', error.response || error.message)
-
+  error => {
+    console.error('API Error:', error)
+    
     // Handle authentication errors
     if (error.response && error.response.status === 401) {
-      console.error('Authentication error (401):', error.response.data || error.message)
-      localStorage.removeItem('token')
-      localStorage.removeItem('user')
-
-      // Only redirect to login if not already going there
-      if (router.currentRoute.value.path !== '/login') {
-        router.push({ path: '/login', query: { redirect: router.currentRoute.value.path } })
-      }
-    } 
-    // Handle server errors
-    else if (error.response && error.response.status >= 500) {
-      console.error('Server error:', error.response.status, error.response.data || error.message)
-    } 
-    // Handle network errors or timeouts
-    else if (!error.response || error.code === 'ECONNABORTED') {
-      console.error('Network error or timeout:', error.message || error)
+      // Get auth store and logout the user
+      const authStore = useAuthStore()
+      authStore.logout()
       
-      // Retry the request once for network issues
-      try {
-        // Create a new request with original config but increased timeout
-        if (!error.config._isRetry) {
-          console.log('Retrying failed request...')
-          const config = {...error.config}
-          config.timeout = 90000 // 90 seconds for retry attempts
-          config._isRetry = true
-          return await axios(config)
-        }
-      } catch (retryError) {
-        console.error('Retry failed:', retryError)
+      // Redirect to login page if not already there
+      const currentPath = window.location.pathname
+      if (currentPath !== '/login') {
+        window.location.href = '/login?redirect=' + encodeURIComponent(currentPath)
       }
-    } 
-    // Handle other errors
-    else {
-      console.error('API error:', error.response?.status, error.response?.data || error.message)
     }
 
     return Promise.reject(error)

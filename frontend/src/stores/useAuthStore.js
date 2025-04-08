@@ -15,10 +15,20 @@ export default defineStore('auth', () => {
     let parsedToken = null;
 
     try {
-        // Try to parse as JSON first
-        parsedToken = storedToken ? JSON.parse(storedToken) : null;
+        // First check if it begins with quotes (JSON string)
+        if (storedToken && (storedToken.startsWith('"') && storedToken.endsWith('"'))) {
+            // It's stored as a JSON string - parse and clean it
+            parsedToken = JSON.parse(storedToken);
+            // Fix the token in localStorage
+            localStorage.setItem('token', parsedToken);
+            console.warn('Fixed token format in localStorage (removed JSON quotes)');
+        } else {
+            // Use as is - plain string token
+            parsedToken = storedToken;
+        }
     } catch (e) {
-        // If not valid JSON, use as is
+        // If not valid JSON or any error, use as is
+        console.warn('Error parsing token, using as-is:', e.message);
         parsedToken = storedToken;
     }
 
@@ -79,38 +89,45 @@ export default defineStore('auth', () => {
 
     async function login(email, pswd) {
         if (isDevelopment.value) {
-            // For development, just set a dummy token and keep current role
-            token.value = "dummy-token";
-            localStorage.setItem('token', JSON.stringify(token.value));
-
+            // For development, just set a dummy token as plain string
+            const dummyToken = "dummy-token";
+            token.value = dummyToken;
+            localStorage.setItem('token', dummyToken); // Store as plain string
+            
+            console.log('Development mode: Using dummy token');
+            
             // Navigate based on current role
             navigateToRoleDashboard();
             return;
         }
-
+        
         try {
-            const data = await FetchFunction({
-                url: `${APP_BASE_URL}/${user}`,
-                init_obj: {
-                    headers: {
-                        'Content-Type': 'application/json'
-                    },
-                    method: 'POST',
-                    body: JSON.stringify(user),
+            // Use the authService directly instead of FetchFunction
+            const response = await authService.loginWithEmail(email, pswd);
+            
+            if (response && response.success) {
+                // Get clean token
+                const accessToken = response.access_token;
+                
+                // Store as plain string, not JSON
+                token.value = accessToken;
+                localStorage.setItem('token', accessToken);
+                
+                console.log('Login successful, token stored in state and localStorage');
+                
+                // Set user role if available
+                if (response.user && response.user.role) {
+                    setUserRole(response.user.role);
                 }
-            }).catch((err) => {
-                throw new Error("Error = " + err);
-            })
-            if (data) {
-                token.value = data.response.user.authentication_token;
-                setUserRole(data.role);
-                localStorage.setItem('token', JSON.stringify(token.value));
+                
+                // Navigate to appropriate dashboard
                 navigateToRoleDashboard();
-                console.log(data)
+            } else {
+                throw new Error(response?.message || 'Login failed');
             }
         } catch (error) {
-            console.log("error = " + error);
-            router.push({ path: '/', query: { error: 'true' } });
+            console.error("Login error:", error);
+            throw error; // Re-throw to let the component handle it
         }
     }
 

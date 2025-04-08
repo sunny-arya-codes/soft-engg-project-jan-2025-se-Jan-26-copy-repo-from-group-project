@@ -5,6 +5,8 @@ import inspect
 import json
 from functools import wraps
 import logging
+import asyncio
+import re
 
 logger = logging.getLogger(__name__)
 
@@ -99,57 +101,99 @@ class FunctionRouter:
             # Return empty list in case of error to avoid breaking the application
             return []
 
-    async def execute_function(self, name: str, args: Dict[str, Any], user_role: Optional[str] = None) -> Any:
+    def get_canonical_function_name(self, name: str) -> Optional[str]:
         """
-        Execute a registered function with given arguments
+        Get the canonical function name, handling different case conventions
+        
+        For example, if 'getCourses' and 'get_courses' are both registered,
+        this method will return the registered name for either input.
         
         Args:
-            name: Function name to execute
-            args: Arguments to pass to the function
-            user_role: Optional role of the user executing the function
+            name: The function name to check
             
         Returns:
-            Function execution result
-            
-        Raises:
-            HTTPException: If function not found, user doesn't have permission, or execution fails
+            The canonical function name if it exists, or None
         """
-        logger.info(f"Executing function: {name} with user_role: {user_role}")
+        # Check direct match first
+        if name in self._functions:
+            return name
+            
+        # Try to match camelCase to snake_case and vice versa
+        snake_case = re.sub(r'([a-z0-9])([A-Z])', r'\1_\2', name).lower()
+        if snake_case in self._functions:
+            logger.info(f"Matched function {name} to canonical name {snake_case}")
+            return snake_case
+            
+        # Convert snake_case to camelCase
+        camel_case_parts = name.split('_')
+        camel_case = camel_case_parts[0] + ''.join(x.title() for x in camel_case_parts[1:])
+        if camel_case in self._functions:
+            logger.info(f"Matched function {name} to canonical name {camel_case}")
+            return camel_case
+            
+        # No match found
+        return None
+
+    async def execute_function(self, name: str, args: Dict[str, Any], user_role: str = None) -> Any:
+        """
+        Execute a registered function with the given arguments
         
-        if name not in self._functions:
-            logger.warning(f"Function {name} not found")
-            raise HTTPException(status_code=404, detail=f"Function {name} not found")
+        Args:
+            name: Name of the function to execute
+            args: Arguments to pass to the function
+            user_role: Role of the user executing the function, used for authorization
+            
+        Returns:
+            Result of the function execution
         
-        # Check role-based access
-        function_info = self._functions[name]
-        declaration = function_info.get("declaration", {})
+        Raises:
+            ValueError: If the function is not registered or user is not authorized
+        """
+        # Get canonical function name (handling different case conventions)
+        canonical_name = self.get_canonical_function_name(name)
+        if not canonical_name:
+            logger.error(f"Function {name} not registered (no canonical match)")
+            raise ValueError(f"Function '{name}' not registered")
         
-        if user_role and "roles" in declaration and declaration.get("roles"):
-            allowed_roles = declaration.get("roles", [])
-            if user_role.lower() not in [r.lower() for r in allowed_roles] and user_role.lower() != "admin":
-                logger.warning(f"User with role '{user_role}' not authorized to execute function '{name}'")
-                raise HTTPException(
-                    status_code=403, 
-                    detail=f"User with role '{user_role}' is not authorized to execute function '{name}'"
-                )
+        function_info = self._functions[canonical_name]
         
+        # Check if function requires authorization
+        if function_info.get("roles") and user_role:
+            # If roles are specified, check if user has the required role
+            allowed_roles = function_info.get("roles")
+            if user_role not in allowed_roles:
+                logger.warning(f"User with role {user_role} not authorized to execute function {canonical_name}")
+                raise ValueError(f"Not authorized to execute function '{canonical_name}'")
+        
+        # Get the function handler
+        handler = function_info.get("handler")
+        if not handler or not callable(handler):
+            logger.error(f"Function {canonical_name} has no valid handler")
+            raise ValueError(f"Function '{canonical_name}' has no valid handler")
+        
+        # Execute the function with the provided arguments
         try:
-            handler = function_info.get("handler")
-            if not handler:
-                logger.error(f"No handler found for function {name}")
-                raise HTTPException(status_code=500, detail=f"Function {name} has no handler")
-            
+            # Check if the handler is async
             if inspect.iscoroutinefunction(handler):
-                logger.debug(f"Executing async function {name}")
-                return await handler(**args)
+                result = await handler(**args)
+            else:
+                # Run synchronous functions in a thread pool
+                loop = asyncio.get_event_loop()
+                result = await loop.run_in_executor(None, lambda: handler(**args))
             
-            logger.debug(f"Executing sync function {name}")
-            return handler(**args)
+            # If we got a Pydantic model back, convert it to a dictionary
+            if hasattr(result, "dict") and callable(result.dict):
+                result = result.dict()
+            elif hasattr(result, "model_dump") and callable(result.model_dump):
+                result = result.model_dump()
+                
+            logger.info(f"Successfully executed function {canonical_name}")
+            return result
         except Exception as e:
-            logger.error(f"Error executing function {name}: {str(e)}")
+            logger.error(f"Error executing function {canonical_name}: {str(e)}")
             import traceback
             logger.error(traceback.format_exc())
-            raise HTTPException(status_code=500, detail=f"Error executing function {name}: {str(e)}")
+            raise
 
     def function_declaration(self, name: str, description: str, parameters: Dict[str, Any], roles: Optional[List[str]] = None):
         """

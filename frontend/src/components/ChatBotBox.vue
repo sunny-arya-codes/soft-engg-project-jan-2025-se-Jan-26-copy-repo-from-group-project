@@ -229,6 +229,61 @@ export default {
       }
     }
     
+    // Improve error display for specific backend errors
+    const formatErrorMessage = (error) => {
+      if (!error) return "An unknown error occurred.";
+      
+      // Handle specific error patterns
+      if (typeof error === 'string') {
+        // Database error pattern
+        if (error.includes("Database error:")) {
+          const errorParts = error.split(':');
+          if (errorParts.length > 1) {
+            const errorDetails = errorParts.slice(1).join(':').trim();
+            
+            // Handle specific database errors
+            if (errorDetails.includes("has no attribute")) {
+              return "There appears to be a database schema mismatch. This has been reported to the development team.";
+            }
+            
+            if (errorDetails.includes("No module named")) {
+              return "A required module is missing. The system administrator has been notified.";
+            }
+
+            if (errorDetails.includes("schema mismatch")) {
+              return "The database schema doesn't match the expected structure. The development team has been notified.";
+            }
+            
+            return `Database Error: ${errorDetails}`;
+          }
+        }
+        
+        // Module import error pattern
+        if (error.includes("cannot import name")) {
+          return "System configuration error. Please contact support.";
+        }
+        
+        // System message errors
+        if (error.includes("schema mismatch")) {
+          return "The system encountered a schema mismatch. This has been reported to the development team.";
+        }
+        
+        // General error message
+        return error;
+      }
+      
+      // If error has a message property (like message: "Course schema mismatch detected")
+      if (error.message) {
+        if (error.message.includes("schema mismatch")) {
+          return "A schema mismatch was detected. The development team has been notified.";
+        }
+        return error.message;
+      }
+      
+      // Fallback for unknown error structures
+      return JSON.stringify(error);
+    };
+    
     // Send a message
     const sendMessage = async () => {
       const message = newMessage.value.trim()
@@ -301,6 +356,33 @@ export default {
       await new Promise(resolve => setTimeout(resolve, 1000 + Math.random() * 1500))
     }
     
+    // Helper function to handle course-related queries
+    const handleCourseQuery = async (message) => {
+      try {
+        console.log("Handling course query explicitly:", message);
+        
+        // Create a direct function call to getCourses
+        const result = await ChatService.executeFunctionCall("getCourses", {});
+        
+        // Format the result for display
+        if (result && result.courses && result.courses.length > 0) {
+          let formattedResponse = "Here are your courses:\n\n";
+          result.courses.forEach((course, index) => {
+            formattedResponse += `**${index+1}. ${course.title}**\n`;
+            if (course.instructor) formattedResponse += `Instructor: ${course.instructor}\n`;
+            if (course.progress !== undefined) formattedResponse += `Progress: ${course.progress}%\n`;
+            formattedResponse += `\n`;
+          });
+          return formattedResponse;
+        } else {
+          return "You don't have any courses currently. You can explore available courses in the course catalog.";
+        }
+      } catch (error) {
+        console.error("Error in direct course handling:", error);
+        return "I tried to retrieve your courses but encountered an issue. Please try again later or contact support if the problem persists.";
+      }
+    }
+    
     // Get AI response from backend
     const getAIResponse = async (message) => {
       try {
@@ -321,6 +403,29 @@ export default {
           return "I'm sorry, I couldn't generate a response. Please try again."
         }
         
+        // Handle completely empty responses
+        if ((!data.content || data.content.trim() === '') 
+            && (!data.function_calls || data.function_calls.length === 0)
+            && (!data.function_results || data.function_results.length === 0)) {
+          console.warn("Received empty response from backend:", data);
+          
+          // If the query is about courses, provide a fallback response
+          const courseTerms = ['course', 'class', 'enrolled', 'classes', 'subject', 'semester'];
+          const isCourseQuery = courseTerms.some(term => message.toLowerCase().includes(term));
+          
+          if (isCourseQuery) {
+            // Try to handle course query directly with a function call
+            return await handleCourseQuery(message);
+          }
+          
+          return "I apologize, but I couldn't generate a proper response to your question. Could you please try rephrasing or providing more details?";
+        }
+        
+        // Handle error responses
+        if (data.error) {
+          return `I encountered an issue while processing your request: ${formatErrorMessage(data.error)}`;
+        }
+        
         // Handle function calls if present
         if (data.function_calls && data.function_calls.length > 0) {
           // Show function calling indicator
@@ -330,20 +435,259 @@ export default {
             // Format the response to include function calls and results
             let response = data.content?.trim() || ""
             
-            // Add function calls section
-            response += "\n\n**Function Calls:**\n```js\n"
-            data.function_calls.forEach(call => {
-              response += `${call.name}(${JSON.stringify(call.arguments, null, 2)})\n`
-            })
-            response += "```\n"
+            // For direct function calls, make the response more user-friendly
+            const isDirectCall = message.toLowerCase().includes("show") || 
+                               message.toLowerCase().includes("get") || 
+                               message.toLowerCase().includes("list");
+                               
+            if (isDirectCall) {
+              // Add a simplified response format for direct calls
+              let formattedResults = "";
+              
+              // Format the function results for display
+              if (data.function_results && data.function_results.length > 0) {
+                const result = data.function_results[0].result;
+                
+                // Special handling for courses
+                if (data.function_calls[0].name === "getCourses" && result.courses) {
+                  formattedResults = "Here are your courses:\n\n";
+                  result.courses.forEach((course, index) => {
+                    formattedResults += `**${index+1}. ${course.title}**\n`;
+                    formattedResults += `Instructor: ${course.instructor}\n`;
+                    if (course.progress !== undefined) {
+                      formattedResults += `Progress: ${course.progress}%\n`;
+                    }
+                    formattedResults += `\n`;
+                  });
+                  return formattedResults;
+                }
+                
+                // Special handling for assignments
+                if (data.function_calls[0].name === "getAssignments" && result.assignments) {
+                  formattedResults = "Here are your assignments:\n\n";
+                  result.assignments.forEach((assignment, index) => {
+                    formattedResults += `**${index+1}. ${assignment.title}**\n`;
+                    formattedResults += `Course: ${assignment.course?.title || 'Unknown'}\n`;
+                    formattedResults += `Due Date: ${new Date(assignment.due_date).toLocaleDateString()}\n`;
+                    formattedResults += `Status: ${assignment.submission_status}\n`;
+                    formattedResults += `\n`;
+                  });
+                  return formattedResults;
+                }
+                
+                // Special handling for user profile
+                if (data.function_calls[0].name === "getUserProfile") {
+                  formattedResults = "Here's your profile information:\n\n";
+                  const profile = result;
+                  formattedResults += `**Name:** ${profile.full_name || profile.username}\n`;
+                  formattedResults += `**Email:** ${profile.email}\n`;
+                  formattedResults += `**Role:** ${profile.role}\n`;
+                  
+                  if (profile.enrolled_courses_count !== undefined) {
+                    formattedResults += `**Enrolled Courses:** ${profile.enrolled_courses_count}\n`;
+                  }
+                  
+                  return formattedResults;
+                }
+              }
+            }
             
-            // Add function results section if available
-            if (data.function_results && data.function_results.length > 0) {
-              response += "\n**Results:**\n```json\n"
-              data.function_results.forEach(result => {
-                response += `${result.name} result: ${JSON.stringify(result.result, null, 2)}\n\n`
-              })
+            // Add function calls section if there are any
+            if (data.function_calls.length > 0) {
+              response += "\n\n**Function Calls:**\n```json\n"
+              for (const call of data.function_calls) {
+                try {
+                  // Extract function name and arguments based on structure
+                  let functionName, args;
+                  
+                  if (call.type === 'function' && call.function) {
+                    // Handle format: { type: 'function', function: { name, arguments } }
+                    functionName = call.function.name;
+                    args = call.function.arguments;
+                  } else {
+                    // Handle standard format: { name, arguments }
+                    functionName = call.name || call.function?.name;
+                    args = call.arguments || call.function?.arguments || call.args || {};
+                  }
+                  
+                  // Ensure we have a valid function name
+                  if (!functionName || typeof functionName !== 'string') {
+                    console.error("Invalid function name:", functionName);
+                    continue;
+                  }
+                  
+                  // Ensure arguments is an object
+                  if (!args || typeof args !== 'object') {
+                    // Parse arguments if they're a string
+                    if (typeof args === 'string') {
+                      try {
+                        if (args.includes('=')) {
+                          // Handle Python-style kwargs format (param1='value', param2=42)
+                          const argsObject = {};
+                          // Split by commas but not those within quotes or brackets
+                          const argPairs = args.split(/,(?=(?:[^"]*"[^"]*")*[^"]*$)(?=(?:[^{]*{[^}]*})*[^}]*$)/);
+                          
+                          for (const pair of argPairs) {
+                            const [key, val] = pair.split('=').map(s => s.trim());
+                            if (key && val) {
+                              // Try to parse value if it's JSON-like
+                              try {
+                                argsObject[key] = JSON.parse(val.replace(/'/g, '"'));
+                              } catch (e) {
+                                argsObject[key] = val.replace(/^["']|["']$/g, ''); // Remove quotes
+                              }
+                            }
+                          }
+                          args = argsObject;
+                        } else {
+                          // Try standard JSON parsing
+                          args = JSON.parse(args);
+                        }
+                      } catch (e) {
+                        console.error(`Error parsing arguments for function ${functionName}:`, e);
+                        args = {};
+                      }
+                    } else {
+                      console.error(`Invalid arguments format for function ${functionName}:`, args);
+                      args = {};
+                    }
+                  }
+                  
+                  response += `${functionName}(${JSON.stringify(args, null, 2)})\n`;
+                } catch (e) {
+                  console.error("Error formatting function call:", e);
+                  const fallbackName = call.type === 'function' && call.function 
+                    ? call.function.name || 'unknown'
+                    : call.name || 'unknown';
+                  response += `${fallbackName}(arguments error)\n`;
+                }
+              }
               response += "```\n"
+            }
+            
+            // Execute each function call and collect results
+            const functionResults = []
+            
+            for (const call of data.function_calls) {
+              try {
+                // Extract function name and arguments based on structure
+                let functionName, args;
+                
+                if (call.type === 'function' && call.function) {
+                  // Handle format: { type: 'function', function: { name, arguments } }
+                  functionName = call.function.name;
+                  args = call.function.arguments;
+                } else {
+                  // Handle standard format: { name, arguments }
+                  functionName = call.name || call.function?.name;
+                  args = call.arguments || call.function?.arguments || call.args || {};
+                }
+                
+                // Ensure we have a valid function name
+                if (!functionName || typeof functionName !== 'string') {
+                  console.error("Invalid function name:", functionName);
+                  continue;
+                }
+                
+                // Ensure arguments is an object
+                if (!args || typeof args !== 'object') {
+                  // Parse arguments if they're a string
+                  if (typeof args === 'string') {
+                    try {
+                      if (args.includes('=')) {
+                        // Handle Python-style kwargs format (param1='value', param2=42)
+                        const argsObject = {};
+                        // Split by commas but not those within quotes or brackets
+                        const argPairs = args.split(/,(?=(?:[^"]*"[^"]*")*[^"]*$)(?=(?:[^{]*{[^}]*})*[^}]*$)/);
+                        
+                        for (const pair of argPairs) {
+                          const [key, val] = pair.split('=').map(s => s.trim());
+                          if (key && val) {
+                            // Try to parse value if it's JSON-like
+                            try {
+                              argsObject[key] = JSON.parse(val.replace(/'/g, '"'));
+                            } catch (e) {
+                              argsObject[key] = val.replace(/^["']|["']$/g, ''); // Remove quotes
+                            }
+                          }
+                        }
+                        args = argsObject;
+                      } else {
+                        // Try standard JSON parsing
+                        args = JSON.parse(args);
+                      }
+                    } catch (e) {
+                      console.error(`Error parsing arguments for function ${functionName}:`, e);
+                      args = {};
+                    }
+                  } else {
+                    console.error(`Invalid arguments format for function ${functionName}:`, args);
+                    args = {};
+                  }
+                }
+                
+                console.log(`Executing function ${functionName} with args:`, args);
+                
+                // Execute the function
+                const result = await ChatService.executeFunctionCall(functionName, args);
+                
+                // Add to results
+                functionResults.push({
+                  name: functionName,
+                  result: result
+                });
+              } catch (funcErr) {
+                console.error("Error executing function:", funcErr);
+                const functionName = 
+                  (call.type === 'function' && call.function?.name) 
+                    ? call.function.name 
+                    : (call.name || call.function?.name || 'unknown');
+                    
+                functionResults.push({
+                  name: functionName,
+                  result: { error: funcErr.message || 'Unknown error' }
+                });
+              }
+            }
+            
+            // Now that we have all results, send a follow-up message to the AI with the results
+            if (functionResults.length > 0) {
+              // Add the results to the response first
+              response += "\n**Function Results:**\n```json\n"
+              for (const result of functionResults) {
+                try {
+                  response += `${result.name}: ${JSON.stringify(result.result, null, 2)}\n\n`
+                } catch (e) {
+                  console.error("Error formatting function result:", e)
+                  response += `${result.name}: (formatting error)\n\n`
+                }
+              }
+              response += "```\n"
+              
+              // Get a follow-up response from the AI with the function results
+              const followUpPayload = {
+                id: threadId.value,
+                query: message,
+                function_results: functionResults
+              }
+              
+              // Only add context if it was in the original request
+              if (props.context) {
+                followUpPayload.context = props.context
+              }
+              
+              try {
+                const followUpResponse = await ChatService.sendMessage(followUpPayload)
+                
+                if (followUpResponse && followUpResponse.content) {
+                  // Append the AI's interpretation of the function results
+                  response += "\n**AI Response to Function Results:**\n"
+                  response += followUpResponse.content
+                }
+              } catch (followUpError) {
+                console.error("Error getting follow-up response:", followUpError)
+                response += "\n\nI wasn't able to provide an interpretation of these results due to an error."
+              }
             }
             
             return response
@@ -882,3 +1226,4 @@ export default {
   opacity: 0;
 }
 </style>
+

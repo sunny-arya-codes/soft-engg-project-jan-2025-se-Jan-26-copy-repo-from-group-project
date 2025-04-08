@@ -19,7 +19,7 @@ const generateId = () => {
 
 // API paths without prefixes since they're already added in the axios instance
 const API_PATHS = {
-  CHAT: '/chat'
+  CHAT: API_ROUTES.CHAT
 };
 
 // Local fallback implementations
@@ -227,8 +227,273 @@ export const ChatService = {
       // Try the API call with proper error handling
       const response = await api.post(`${API_PATHS.CHAT}`, payload);
       
-      // Return response.data directly as it should already be formatted correctly
-      return response.data;
+      // Process and normalize the response
+      let processedResponse = { ...response.data };
+      
+      // Ensure we always have a valid structure even if backend returns empty/null fields
+      if (!processedResponse.content) processedResponse.content = '';
+      if (!processedResponse.function_calls) processedResponse.function_calls = [];
+      if (!processedResponse.function_results) processedResponse.function_results = [];
+      
+      // Auto-detect common queries and add function calls when needed
+      const userQueryText = (payload.query || '').toLowerCase();
+      
+      // If we have empty response but the query looks like it needs function calls
+      if ((!processedResponse.content || processedResponse.content.trim() === '') && 
+          processedResponse.function_calls.length === 0) {
+          
+        // Handle course-related queries
+        if (userQueryText.includes('course') || userQueryText.includes('class') || 
+            userQueryText.includes('enrolled') || userQueryText.match(/what (?:am i|i am) (?:taking|studying)/i)) {
+          console.log("Adding automatic getCourses function call for course query");
+          processedResponse.function_calls.push({
+            name: "getCourses",
+            arguments: {}
+          });
+        }
+        
+        // Handle assignment-related queries
+        else if (userQueryText.includes('assignment') || userQueryText.includes('homework') || 
+                userQueryText.includes('due') || userQueryText.includes('deadline')) {
+          console.log("Adding automatic getAssignments function call for assignment query");
+          processedResponse.function_calls.push({
+            name: "getAssignments",
+            arguments: {}
+          });
+        }
+        
+        // Handle profile-related queries
+        else if (userQueryText.includes('profile') || userQueryText.includes('my account') || 
+                userQueryText.includes('my info') || userQueryText.includes('my information')) {
+          console.log("Adding automatic getUserProfile function call for profile query");
+          processedResponse.function_calls.push({
+            name: "getUserProfile",
+            arguments: {}
+          });
+        }
+      }
+      
+      // Normalize function_calls to ensure consistent format
+      if (processedResponse.function_calls) {
+        // If function_calls exists but is not an array, convert to array
+        if (!Array.isArray(processedResponse.function_calls)) {
+          try {
+            // First check if it's a JSON string
+            if (typeof processedResponse.function_calls === 'string') {
+              try {
+                // First try to extract function calls from tool_code blocks
+                if (processedResponse.function_calls.includes('```tool_code') || 
+                    processedResponse.function_calls.includes('```python') ||
+                    processedResponse.function_calls.includes('```json')) {
+                  // Extract code from the code blocks
+                  const codeBlockRegex = /```(?:tool_code|python|json)?\n(.*?)```/gs;
+                  const matches = [...processedResponse.function_calls.matchAll(codeBlockRegex)];
+                  
+                  if (matches.length > 0) {
+                    console.log(`Found ${matches.length} code blocks in function_calls`);
+                    let extractedCalls = [];
+                    
+                    for (const match of matches) {
+                      const codeContent = match[1].trim();
+                      
+                      // Try to detect function calls like print(function_name(param1='value', param2=42))
+                      const functionCallRegex = /(\w+)\s*\(\s*({[^}]+}|[^)]+)\s*\)/g;
+                      const functionMatches = [...codeContent.matchAll(functionCallRegex)];
+                      
+                      for (const funcMatch of functionMatches) {
+                        const funcName = funcMatch[1];
+                        let funcArgs = funcMatch[2];
+                        
+                        // Skip common Python functions
+                        if (['print', 'str', 'int', 'float', 'list', 'dict', 'set', 'tuple', 'len'].includes(funcName)) {
+                          continue;
+                        }
+                        
+                        try {
+                          // Try to convert Python-style arguments to JSON
+                          // Convert single quotes to double quotes
+                          funcArgs = funcArgs.replace(/'/g, '"');
+                          
+                          // Handle kwargs format (param1=value, param2=42)
+                          if (funcArgs.includes('=')) {
+                            const argsObject = {};
+                            // Split by commas but not those within quotes or brackets
+                            const argPairs = funcArgs.split(/,(?=(?:[^"]*"[^"]*")*[^"]*$)(?=(?:[^{]*{[^}]*})*[^}]*$)/);
+                            
+                            for (const pair of argPairs) {
+                              const [key, val] = pair.split('=').map(s => s.trim());
+                              if (key && val) {
+                                // Try to parse value if it's JSON-like
+                                try {
+                                  argsObject[key] = JSON.parse(val);
+                                } catch (e) {
+                                  argsObject[key] = val.replace(/^["']|["']$/g, ''); // Remove quotes
+                                }
+                              }
+                            }
+                            
+                            extractedCalls.push({
+                              name: funcName,
+                              arguments: argsObject
+                            });
+                          } else {
+                            // Try to parse as JSON directly
+                            try {
+                              const parsedArgs = JSON.parse(funcArgs);
+                              extractedCalls.push({
+                                name: funcName,
+                                arguments: parsedArgs
+                              });
+                            } catch (e) {
+                              console.error(`Error parsing function arguments: ${funcArgs}`, e);
+                              extractedCalls.push({
+                                name: funcName,
+                                arguments: funcArgs
+                              });
+                            }
+                          }
+                        } catch (e) {
+                          console.error(`Error extracting function call ${funcName}:`, e);
+                          extractedCalls.push({
+                            name: funcName,
+                            arguments: {}
+                          });
+                        }
+                      }
+                    }
+                    
+                    if (extractedCalls.length > 0) {
+                      console.log(`Extracted ${extractedCalls.length} function calls from code blocks`, extractedCalls);
+                      processedResponse.function_calls = extractedCalls;
+                    } else {
+                      // Fallback: try to parse the whole thing as JSON
+                      try {
+                        processedResponse.function_calls = JSON.parse(processedResponse.function_calls);
+                        if (!Array.isArray(processedResponse.function_calls)) {
+                          processedResponse.function_calls = [processedResponse.function_calls];
+                        }
+                      } catch (e) {
+                        // Not valid JSON, treat as single item
+                        processedResponse.function_calls = [processedResponse.function_calls];
+                      }
+                    }
+                  } else {
+                    // Fallback to standard JSON parsing
+                    try {
+                      processedResponse.function_calls = JSON.parse(processedResponse.function_calls);
+                      if (!Array.isArray(processedResponse.function_calls)) {
+                        processedResponse.function_calls = [processedResponse.function_calls];
+                      }
+                    } catch (e) {
+                      // Not valid JSON, treat as single item
+                      processedResponse.function_calls = [processedResponse.function_calls];
+                    }
+                  }
+                } else {
+                  // Standard JSON parsing
+                  try {
+                    processedResponse.function_calls = JSON.parse(processedResponse.function_calls);
+                    if (!Array.isArray(processedResponse.function_calls)) {
+                      processedResponse.function_calls = [processedResponse.function_calls];
+                    }
+                  } catch (e) {
+                    // Not valid JSON, treat as single item
+                    processedResponse.function_calls = [processedResponse.function_calls];
+                  }
+                }
+              } catch (e) {
+                // Not valid JSON, treat as single item
+                processedResponse.function_calls = [processedResponse.function_calls];
+              }
+            } else {
+              // Not a string, just wrap object in array
+              processedResponse.function_calls = [processedResponse.function_calls];
+            }
+          } catch (e) {
+            console.error('Error normalizing function_calls format:', e);
+            processedResponse.function_calls = [];
+          }
+        }
+        
+        // Ensure each function call has proper structure
+        processedResponse.function_calls = processedResponse.function_calls.map(call => {
+          // If it's a string, try to parse it
+          if (typeof call === 'string') {
+            try {
+              return JSON.parse(call);
+            } catch (e) {
+              console.error('Error parsing function call string:', e);
+              return { name: 'unknown', arguments: {} };
+            }
+          }
+          
+          // Handle the format seen in the error message: { type: 'function', function: { name, arguments } }
+          if (call.type === 'function' && call.function) {
+            return {
+              name: call.function.name,
+              arguments: call.function.arguments || {}
+            };
+          }
+          
+          // Default fallback structure
+          return {
+            name: call.name || 'unknown',
+            arguments: call.arguments || {}
+          };
+        });
+      }
+      
+      // Normalize function_results similarly
+      if (processedResponse.function_results) {
+        if (!Array.isArray(processedResponse.function_results)) {
+          try {
+            if (typeof processedResponse.function_results === 'string') {
+              try {
+                processedResponse.function_results = JSON.parse(processedResponse.function_results);
+                if (!Array.isArray(processedResponse.function_results)) {
+                  processedResponse.function_results = [processedResponse.function_results];
+                }
+              } catch (e) {
+                processedResponse.function_results = [processedResponse.function_results];
+              }
+            } else {
+              processedResponse.function_results = [processedResponse.function_results];
+            }
+          } catch (e) {
+            console.error('Error normalizing function_results:', e);
+            processedResponse.function_results = [];
+          }
+        }
+        
+        // Ensure each function result has proper structure
+        processedResponse.function_results = processedResponse.function_results.map(result => {
+          // If it's a string, try to parse it
+          if (typeof result === 'string') {
+            try {
+              return JSON.parse(result);
+            } catch (e) {
+              console.error('Error parsing function result string:', e);
+              return { name: 'unknown', result: { error: 'Failed to parse result' } };
+            }
+          }
+          
+          // Handle possible nested structure
+          if (result.type === 'function_result' && result.function_result) {
+            return {
+              name: result.function_result.name || result.name || 'unknown',
+              result: result.function_result.result || result.result || { error: 'Missing result data' }
+            };
+          }
+          
+          // Default fallback structure
+          return {
+            name: result.name || 'unknown',
+            result: result.result !== undefined ? result.result : { error: 'No result data' }
+          };
+        });
+      }
+      
+      return processedResponse;
     } catch (error) {
       console.error('Error sending message to AI:', error);
       
@@ -249,7 +514,7 @@ export const ChatService = {
       
       // Generic fallback for network errors or other issues
       return {
-        content: "I apologize, but I'm having trouble connecting to the AI service. Please try again in a moment."
+        content: "I'm sorry, I couldn't connect to my knowledge base. Please try again in a moment."
       };
     }
   },
@@ -739,104 +1004,54 @@ export const ChatService = {
     console.log(`Executing function: ${functionName}`, args);
     
     try {
-      // Map function names to API endpoints and methods
-      const functionMappings = {
-        // Course functions
-        getCourses: { method: 'GET', endpoint: '/api/v1/courses' },
-        getCourseById: { method: 'GET', endpoint: `/api/v1/courses/${args.courseId}` },
-        
-        // Assignment functions
-        getAssignments: { method: 'GET', endpoint: '/api/v1/assignments' },
-        getAssignmentById: { method: 'GET', endpoint: `/api/v1/assignments/${args.assignmentId}` },
-        
-        // Quiz functions
-        getQuizzes: { method: 'GET', endpoint: '/api/v1/quizzes' },
-        getQuizById: { method: 'GET', endpoint: `/api/v1/quizzes/${args.quizId}` },
-        
-        // Submission functions
-        getSubmissions: { method: 'GET', endpoint: '/api/v1/submissions' },
-        getSubmissionById: { method: 'GET', endpoint: `/api/v1/submissions/${args.submissionId}` },
-        
-        // User profile
-        getUserProfile: { method: 'GET', endpoint: '/api/v1/auth/profile' }
+      // Send a direct function call to the backend
+      const payload = {
+        id: crypto.randomUUID(),
+        query: `Executing function: ${functionName}`,
+        function_call: {
+          name: functionName,
+          arguments: args || {}
+        }
       };
       
-      // Check if function is supported
-      if (!functionMappings[functionName]) {
-        throw new Error(`Unsupported function: ${functionName}`);
-      }
+      console.log('Sending direct function execution request to backend:', payload);
       
-      const { method, endpoint } = functionMappings[functionName];
+      // Use the chat endpoint which now supports direct function calling
+      const response = await api.post(`${API_PATHS.CHAT}`, payload);
       
-      // For GET requests with query parameters
-      let url = endpoint;
-      if (method === 'GET' && args && Object.keys(args).length > 0) {
-        // Skip parameters used in the URL path
-        const queryParams = { ...args };
-        if (endpoint.includes(`/${args.courseId}`)) delete queryParams.courseId;
-        if (endpoint.includes(`/${args.assignmentId}`)) delete queryParams.assignmentId;
-        if (endpoint.includes(`/${args.quizId}`)) delete queryParams.quizId;
-        if (endpoint.includes(`/${args.submissionId}`)) delete queryParams.submissionId;
-        
-        // Add remaining parameters as query string
-        if (Object.keys(queryParams).length > 0) {
-          const queryString = new URLSearchParams(queryParams).toString();
-          url = `${endpoint}?${queryString}`;
+      // The response should include function_results with our function's result
+      if (response.data && response.data.function_results && response.data.function_results.length > 0) {
+        // Find the result for this function
+        const functionResult = response.data.function_results.find(r => r.name === functionName);
+        if (functionResult) {
+          console.log(`Received result for function ${functionName}:`, functionResult.result);
+          return functionResult.result;
         }
       }
       
-      // First try the real API
-      try {
-        return await this.executeApiCall(method, url, method !== 'GET' ? args : null);
+      // If for some reason we didn't get a function result, return the raw response
+      console.warn(`Function ${functionName} didn't return specific results, returning raw response`);
+      return response.data;
       } catch (error) {
-        console.log(`API endpoint failed, using mock data for ${functionName}`);
+      console.error(`Error executing function ${functionName}:`, error);
+      
+      if (error.response) {
+        // Handle specific error status codes
+        const status = error.response.status;
         
-        // Provide mock data for development
-        switch(functionName) {
-          case 'getCourses':
-            return {
-              courses: [
-                { id: 'course1', title: 'Introduction to Programming', code: 'CS101' },
-                { id: 'course2', title: 'Data Structures', code: 'CS201' },
-                { id: 'course3', title: 'Algorithms', code: 'CS301' }
-              ]
-            };
-            
-          case 'getCourseById':
-            return {
-              id: args.courseId,
-              title: `Course ${args.courseId}`,
-              code: 'CS' + Math.floor(100 + Math.random() * 900),
-              description: 'This is a mock course description for development purposes.',
-              instructor: 'Dr. John Doe',
-              credits: 3
-            };
-            
-          case 'getAssignments':
-            return {
-              assignments: [
-                { id: 'assignment1', title: 'Homework 1', dueDate: '2025-04-15', courseId: 'course1' },
-                { id: 'assignment2', title: 'Project Phase 1', dueDate: '2025-04-22', courseId: 'course1' },
-                { id: 'assignment3', title: 'Final Project', dueDate: '2025-05-10', courseId: 'course2' }
-              ]
-            };
-            
-          case 'getUserProfile':
-            return {
-              id: 'user123',
-              name: 'John Student',
-              email: '22f3001492@ds.study.iitm.ac.in',
-              role: 'student',
-              enrolledCourses: ['course1', 'course2', 'course3']
-            };
-            
-          default:
-            throw new Error(`No mock data available for function: ${functionName}`);
+        if (status === 401 || status === 403) {
+          throw new Error('Authentication required. Please log in to access this functionality.');
+        } else if (status === 404) {
+          throw new Error(`Function ${functionName} not found or not accessible.`);
+        } else if (status === 422) {
+          throw new Error(`Invalid arguments provided to function ${functionName}.`);
+        } else if (status >= 500) {
+          throw new Error('Server error occurred. Please try again later.');
         }
       }
-    } catch (error) {
-      console.error(`Error executing function ${functionName}:`, error);
-      throw error;
+      
+      // For network or other errors
+      throw new Error(`Failed to execute function ${functionName}: ${error.message}`);
     }
   },
 

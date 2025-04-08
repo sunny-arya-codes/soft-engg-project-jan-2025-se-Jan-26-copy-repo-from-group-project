@@ -43,6 +43,7 @@ import asyncio
 import time
 import concurrent.futures
 from starlette.middleware.gzip import GZipMiddleware
+from app.auth.context import request_context_middleware
 
 # Import the modules individually instead of from app.routes
 from app.routes.auth import router as auth
@@ -221,6 +222,9 @@ app = FastAPI(
     openapi_url="/api/openapi.json",
 )
 
+# Add request context middleware for auth context
+app.middleware("http")(request_context_middleware)
+
 # Add CORS middleware
 app.add_middleware(
     CORSMiddleware,
@@ -288,6 +292,51 @@ async def root():
 async def health_check():
     # Simple response that avoids any database calls
     return JSONResponse(status_code=200, content={"status": "ok"})
+
+# Startup events
+@app.on_event("startup")
+async def startup_event():
+    """
+    Perform initialization tasks on app startup
+    """
+    logger.info("Application startup - initializing components...")
+    
+    # Ensure the uploads directory exists
+    uploads_dir = os.path.join(os.path.dirname(__file__), 'uploads')
+    os.makedirs(uploads_dir, exist_ok=True)
+    
+    # Initialize metadata handler
+    app.state.metadata_handler = MetadataHandler()
+    logger.info("Metadata handler initialized")
+    
+    # Initialize LLM service
+    try:
+        from app.services.llm_service import create_llm_app
+        await create_llm_app(app)
+        logger.info("LLM service initialized")
+        
+        # Test function calling to ensure it's working
+        from app.services.llm_service import call_llm
+        from langchain_core.messages import HumanMessage
+        test_message = "This is a test message to verify function calling."
+        try:
+            logger.info("Testing function calling...")
+            test_response = await call_llm([HumanMessage(content=test_message)])
+            # Check if we need to handle content-based function calls
+            if test_response and hasattr(test_response, "content"):
+                content = test_response.content
+                if isinstance(content, str) and ("tool_calls" in content or "function_call" in content):
+                    logger.warning("Detected model outputs function calls as text in content - content extraction is enabled")
+                else:
+                    logger.info("Model appears to use structured tool calls correctly")
+        except Exception as test_error:
+            logger.warning(f"Function calling test failed: {str(test_error)}")
+    except Exception as e:
+        logger.error(f"Error initializing LLM service: {str(e)}")
+        # App can still function without LLM
+    
+    # Additional startup code...
+    # ... existing code ...
 
 if __name__ == "__main__":
     import uvicorn

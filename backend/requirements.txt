@@ -1,39 +1,43 @@
 # Core dependencies
-fastapi==0.115.11
-uvicorn==0.34.0
-pydantic==2.10.6
-pydantic-settings==2.8.1
-starlette==0.46.1
+fastapi>=0.95.0
+uvicorn>=0.21.1
+pydantic>=2.0.0
+pydantic-settings>=2.0.0
+sqlalchemy>=2.0.0
+alembic>=1.9.0
+asyncpg>=0.27.0
+
+# Security and authentication
+python-jose>=3.3.0
+passlib>=1.7.4
+bcrypt>=4.0.1
+python-multipart>=0.0.5
+
+# Testing
+pytest>=7.3.1
+pytest-asyncio>=0.21.0
+httpx>=0.23.0
+
+# Utilities
+python-dotenv>=1.0.0
+email-validator>=2.0.0
+tenacity>=8.2.2
+loguru>=0.7.0
+structlog>=23.1.0
+aiofiles>=23.1.0
+aiocache>=0.12.1
+openai>=0.27.8
+
+# Production
+gunicorn>=20.1.0
 
 # Database
-sqlalchemy==2.0.38
-alembic==1.15.1
 psycopg2-binary==2.9.9
-asyncpg==0.30.0
 pgvector==0.3.6
-
-# Authentication
-python-jose==3.4.0
-python-multipart==0.0.20
-bcrypt==4.3.0
-passlib==1.7.4
-pyjwt==2.10.1
 
 # HTTP and networking
 aiohttp==3.11.14
-httpx==0.28.1
 requests==2.32.3
-
-# Utilities
-python-dotenv==1.0.1
-email_validator==2.2.0
-jinja2==3.1.6
-pytz==2025.1
-
-# AI and LLM
-langchain-core==0.1.12
-langchain-google-genai==0.0.11
-langchain-postgres==0.0.1
 
 # Monitoring
 psutil==5.9.5

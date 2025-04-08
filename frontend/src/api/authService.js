@@ -112,8 +112,31 @@ export const authService = {
             logger.log('Login successful');
             logger.debug('User data:', response.data);
             
-            // Save auth data
-            localStorage.setItem('token', response.data.access_token);
+            if (!response.data || !response.data.access_token) {
+                logger.error('Login response missing access_token:', response.data);
+                return { 
+                    success: false, 
+                    message: 'Invalid response from server' 
+                };
+            }
+            
+            // Get the token and clean it up
+            const token = response.data.access_token;
+            
+            // Save auth data to localStorage as plain string (not JSON)
+            localStorage.setItem('token', token);
+            console.log('Token saved to localStorage:', token.substring(0, 15) + '...');
+            
+            // Also update Pinia store if available
+            try {
+                const authStore = window.Pinia?.state?.value?.auth;
+                if (authStore) {
+                    authStore.token = token;
+                    console.log('Token also updated in auth store');
+                }
+            } catch (storeError) {
+                console.warn('Could not update auth store:', storeError);
+            }
             
             // Debug full response to see actual structure
             console.log('Full login response structure:', JSON.stringify(response.data, null, 2));
@@ -251,28 +274,64 @@ export const authService = {
     // Check if user is authenticated
     async isAuthenticated() {
         try {
-            logger.debug('Checking authentication status...');
-            
-            // First check if token exists
+            // Check for token existence
             const token = localStorage.getItem('token');
             if (!token) {
-                logger.debug('No token found, user is not authenticated');
+                logger.warn('No token found in localStorage');
                 return false;
             }
             
-            // Check for cached user data to avoid repeated API calls
-            if (this._cachedUserData) {
-                logger.debug('Using cached user data for authentication check');
-                return true;
+            // Clean token (remove quotes if stored as JSON)
+            let cleanToken = token;
+            if (typeof cleanToken === 'string') {
+                cleanToken = cleanToken.replace(/^"|"$/g, '');
             }
             
-            // If no cached data, make the API call
-            const user = await this.getCurrentUser();
-            const isAuth = !!user;
-            logger.debug(`Authentication check result: ${isAuth ? 'Authenticated' : 'Not authenticated'}`);
-            return isAuth;
+            // Add debug info about token
+            logger.debug(`Token exists: ${!!cleanToken}, Length: ${cleanToken.length}`);
+            
+            // Simple token validation (not checking expiry yet)
+            if (!cleanToken || cleanToken === 'undefined' || cleanToken === 'null') {
+                logger.warn('Invalid token value in localStorage');
+                localStorage.removeItem('token'); // Clear invalid token
+                return false;
+            }
+            
+            // Check with backend if possible
+            try {
+                // Attempt to fetch user profile as validation
+                logger.debug('Validating token by fetching user profile...');
+                const response = await this.axiosInstance.get('/users/me', {
+                    headers: {
+                        'Authorization': `Bearer ${cleanToken}`
+                    },
+                    timeout: 3000 // Fast timeout for auth check
+                });
+                
+                // If we get a successful response, the token is valid
+                if (response.status === 200) {
+                    logger.debug('Token validated successfully via API');
+                    return true;
+                }
+            } catch (apiError) {
+                logger.error('Token validation failed:', apiError.message);
+                
+                // Clear token on 401 responses
+                if (apiError.response && apiError.response.status === 401) {
+                    logger.warn('Token rejected by server, clearing from storage');
+                    localStorage.removeItem('token');
+                    return false;
+                }
+                
+                // For network errors, still consider authenticated if token exists
+                logger.warn('Token validation API error, falling back to token existence check');
+                return true; // Token exists but couldn't validate with backend
+            }
+            
+            // Fallback to token existence
+            return true;
         } catch (error) {
-            logger.error('Error checking authentication:', error.message);
+            logger.error('Error in isAuthenticated check:', error.message);
             return false;
         }
     },
