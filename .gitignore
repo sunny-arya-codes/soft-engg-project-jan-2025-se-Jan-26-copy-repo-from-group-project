@@ -16,3 +16,5 @@ backend/app/services/__pycache__/
 # Ignore test plan
 test_plan.md
 
+# Ignore logs
+*.log
