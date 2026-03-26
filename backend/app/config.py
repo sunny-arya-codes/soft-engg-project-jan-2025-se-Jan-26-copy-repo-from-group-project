@@ -16,12 +16,12 @@ class Settings(BaseSettings):
     DB_ECHO: bool = os.getenv("DB_ECHO", "False").lower() == "true"
 
     # Authentication
-    SESSION_SECRET: str
-    GOOGLE_CLIENT_ID: str
-    GOOGLE_CLIENT_SECRET: str
+    SESSION_SECRET: str = "development_session_secret"
+    GOOGLE_CLIENT_ID: str = ""
+    GOOGLE_CLIENT_SECRET: str = ""
 
     # JWT Settings
-    JWT_SECRET: str
+    JWT_SECRET: str = "development_jwt_secret"
     JWT_ALGORITHM: str = "HS256"
     ACCESS_TOKEN_EXPIRE_MINUTES: int = 60
 
@@ -51,11 +51,11 @@ class Settings(BaseSettings):
     ENV: str = "development"
 
     # LLM
-    LANGSMITH_TRACING: str
-    LANGSMITH_ENDPOINT: str
-    LANGSMITH_API_KEY: str
-    LANGSMITH_PROJECT: str
-    GOOGLE_API_KEY: str
+    LANGSMITH_TRACING: str = "false"
+    LANGSMITH_ENDPOINT: str = ""
+    LANGSMITH_API_KEY: str = ""
+    LANGSMITH_PROJECT: str = ""
+    GOOGLE_API_KEY: str = ""
     YOUTUBE_API_KEY: Optional[str] = None
 
     # S3 Storage Settings
@@ -84,10 +84,10 @@ class Settings(BaseSettings):
 
     # Logflare Settings
     USE_LOGFLARE: bool = False
-    LOGFLARE_SOURCE_ID: str
-    LOGFLARE_API_KEY: str           
-    LOGFLARE_BATCH_SIZE: int
-    LOGFLARE_LOG_LEVEL: str 
+    LOGFLARE_SOURCE_ID: str = ""
+    LOGFLARE_API_KEY: str = ""          
+    LOGFLARE_BATCH_SIZE: int = 1
+    LOGFLARE_LOG_LEVEL: str = "INFO"
 
     # Environment and base settings
     DEBUG: bool = os.getenv("DEBUG", "True").lower() == "true"

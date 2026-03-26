@@ -3325,3 +3325,774 @@ WHERE pg_catalog.pg_class.relkind = ANY (ARRAY[$1::VARCHAR, $2::VARCHAR]) AND pg
 2025-03-13 00:11:39,218 - app.services.monitoring_service - WARNING - New alert created: {'id': 'alert_1741804899', 'type': 'high_cpu_usage', 'severity': 'warning', 'message': 'CPU usage is 92.1%, above threshold of 80.0%', 'timestamp': datetime.datetime(2025, 3, 13, 0, 11, 39, 218371), 'resolved': False, 'resolved_at': None, 'resolved_by': None, 'acknowledgement': None}
 2025-03-13 00:12:11,614 - app.services.monitoring_service - WARNING - New alert created: {'id': 'alert_1741804931', 'type': 'high_cpu_usage', 'severity': 'warning', 'message': 'CPU usage is 99.9%, above threshold of 80.0%', 'timestamp': datetime.datetime(2025, 3, 13, 0, 12, 11, 614192), 'resolved': False, 'resolved_at': None, 'resolved_by': None, 'acknowledgement': None}
 2025-03-13 11:11:47,521 - app.services.monitoring_service - INFO - Stopped monitoring background tasks
+2026-03-26 17:31:48,580 - root - INFO - Starting SE Team 26 API v1.0.0
+2026-03-26 17:31:48,581 - root - INFO - Mounted static files from /home/sunny/ai-academic-guidance/backend/static
+2026-03-26 17:31:48,730 - root - INFO - Application starting up...
+2026-03-26 17:31:48,765 - root - ERROR - Failed to initialize database models: password authentication failed for user "sunny"
+2026-03-26 17:36:38,789 - root - INFO - Starting SE Team 26 API v1.0.0
+2026-03-26 17:36:38,790 - root - INFO - Mounted static files from /home/sunny/ai-academic-guidance/backend/static
+2026-03-26 17:36:38,934 - root - INFO - Application starting up...
+2026-03-26 17:36:38,963 - root - ERROR - Failed to initialize database models: database "cognitum" does not exist
+2026-03-26 17:38:54,150 - root - INFO - Starting SE Team 26 API v1.0.0
+2026-03-26 17:38:54,151 - root - INFO - Mounted static files from /home/sunny/ai-academic-guidance/backend/static
+2026-03-26 17:38:54,446 - root - INFO - Application starting up...
+2026-03-26 17:38:54,495 - root - ERROR - Failed to initialize database models: database "cognitum" does not exist
+2026-03-26 17:41:24,115 - root - INFO - Starting SE Team 26 API v1.0.0
+2026-03-26 17:41:24,119 - root - INFO - Mounted static files from /home/sunny/ai-academic-guidance/backend/static
+2026-03-26 17:41:24,395 - root - INFO - Application starting up...
+2026-03-26 17:41:24,444 - root - ERROR - Failed to initialize database models: database "cognitum" does not exist
+2026-03-26 17:43:27,187 - root - INFO - Starting SE Team 26 API v1.0.0
+2026-03-26 17:43:27,190 - root - INFO - Mounted static files from /home/sunny/ai-academic-guidance/backend/static
+2026-03-26 17:43:27,457 - root - INFO - Application starting up...
+2026-03-26 17:43:27,506 - sqlalchemy.engine.Engine - INFO - select pg_catalog.version()
+2026-03-26 17:43:27,506 - sqlalchemy.engine.Engine - INFO - [raw sql] ()
+2026-03-26 17:43:27,508 - sqlalchemy.engine.Engine - INFO - select current_schema()
+2026-03-26 17:43:27,508 - sqlalchemy.engine.Engine - INFO - [raw sql] ()
+2026-03-26 17:43:27,510 - sqlalchemy.engine.Engine - INFO - show standard_conforming_strings
+2026-03-26 17:43:27,510 - sqlalchemy.engine.Engine - INFO - [raw sql] ()
+2026-03-26 17:43:27,511 - sqlalchemy.engine.Engine - INFO - BEGIN (implicit)
+2026-03-26 17:43:27,517 - sqlalchemy.engine.Engine - INFO - SELECT pg_catalog.pg_class.relname 
+FROM pg_catalog.pg_class JOIN pg_catalog.pg_namespace ON pg_catalog.pg_namespace.oid = pg_catalog.pg_class.relnamespace 
+WHERE pg_catalog.pg_class.relkind = ANY (ARRAY[$1::VARCHAR, $2::VARCHAR]) AND pg_catalog.pg_class.relpersistence != $3::CHAR AND pg_catalog.pg_table_is_visible(pg_catalog.pg_class.oid) AND pg_catalog.pg_namespace.nspname != $4::VARCHAR
+2026-03-26 17:43:27,517 - sqlalchemy.engine.Engine - INFO - [generated in 0.00044s] ('r', 'p', 't', 'pg_catalog')
+2026-03-26 17:43:27,521 - app.database - INFO - No existing tables found, creating all database tables
+2026-03-26 17:43:27,523 - sqlalchemy.engine.Engine - INFO - SELECT pg_catalog.pg_class.relname 
+FROM pg_catalog.pg_class JOIN pg_catalog.pg_namespace ON pg_catalog.pg_namespace.oid = pg_catalog.pg_class.relnamespace 
+WHERE pg_catalog.pg_class.relname = $1::VARCHAR AND pg_catalog.pg_class.relkind = ANY (ARRAY[$2::VARCHAR, $3::VARCHAR, $4::VARCHAR, $5::VARCHAR, $6::VARCHAR]) AND pg_catalog.pg_table_is_visible(pg_catalog.pg_class.oid) AND pg_catalog.pg_namespace.nspname != $7::VARCHAR
+2026-03-26 17:43:27,523 - sqlalchemy.engine.Engine - INFO - [generated in 0.00037s] ('assignments', 'r', 'p', 'f', 'v', 'm', 'pg_catalog')
+2026-03-26 17:43:27,525 - sqlalchemy.engine.Engine - INFO - SELECT pg_catalog.pg_class.relname 
+FROM pg_catalog.pg_class JOIN pg_catalog.pg_namespace ON pg_catalog.pg_namespace.oid = pg_catalog.pg_class.relnamespace 
+WHERE pg_catalog.pg_class.relname = $1::VARCHAR AND pg_catalog.pg_class.relkind = ANY (ARRAY[$2::VARCHAR, $3::VARCHAR, $4::VARCHAR, $5::VARCHAR, $6::VARCHAR]) AND pg_catalog.pg_table_is_visible(pg_catalog.pg_class.oid) AND pg_catalog.pg_namespace.nspname != $7::VARCHAR
+2026-03-26 17:43:27,525 - sqlalchemy.engine.Engine - INFO - [cached since 0.00223s ago] ('submissions', 'r', 'p', 'f', 'v', 'm', 'pg_catalog')
+2026-03-26 17:43:27,526 - sqlalchemy.engine.Engine - INFO - SELECT pg_catalog.pg_class.relname 
+FROM pg_catalog.pg_class JOIN pg_catalog.pg_namespace ON pg_catalog.pg_namespace.oid = pg_catalog.pg_class.relnamespace 
+WHERE pg_catalog.pg_class.relname = $1::VARCHAR AND pg_catalog.pg_class.relkind = ANY (ARRAY[$2::VARCHAR, $3::VARCHAR, $4::VARCHAR, $5::VARCHAR, $6::VARCHAR]) AND pg_catalog.pg_table_is_visible(pg_catalog.pg_class.oid) AND pg_catalog.pg_namespace.nspname != $7::VARCHAR
+2026-03-26 17:43:27,526 - sqlalchemy.engine.Engine - INFO - [cached since 0.00334s ago] ('user_courses', 'r', 'p', 'f', 'v', 'm', 'pg_catalog')
+2026-03-26 17:43:27,527 - sqlalchemy.engine.Engine - INFO - SELECT pg_catalog.pg_class.relname 
+FROM pg_catalog.pg_class JOIN pg_catalog.pg_namespace ON pg_catalog.pg_namespace.oid = pg_catalog.pg_class.relnamespace 
+WHERE pg_catalog.pg_class.relname = $1::VARCHAR AND pg_catalog.pg_class.relkind = ANY (ARRAY[$2::VARCHAR, $3::VARCHAR, $4::VARCHAR, $5::VARCHAR, $6::VARCHAR]) AND pg_catalog.pg_table_is_visible(pg_catalog.pg_class.oid) AND pg_catalog.pg_namespace.nspname != $7::VARCHAR
+2026-03-26 17:43:27,527 - sqlalchemy.engine.Engine - INFO - [cached since 0.00446s ago] ('courses', 'r', 'p', 'f', 'v', 'm', 'pg_catalog')
+2026-03-26 17:43:27,528 - sqlalchemy.engine.Engine - INFO - SELECT pg_catalog.pg_class.relname 
+FROM pg_catalog.pg_class JOIN pg_catalog.pg_namespace ON pg_catalog.pg_namespace.oid = pg_catalog.pg_class.relnamespace 
+WHERE pg_catalog.pg_class.relname = $1::VARCHAR AND pg_catalog.pg_class.relkind = ANY (ARRAY[$2::VARCHAR, $3::VARCHAR, $4::VARCHAR, $5::VARCHAR, $6::VARCHAR]) AND pg_catalog.pg_table_is_visible(pg_catalog.pg_class.oid) AND pg_catalog.pg_namespace.nspname != $7::VARCHAR
+2026-03-26 17:43:27,528 - sqlalchemy.engine.Engine - INFO - [cached since 0.005585s ago] ('course_enrollments', 'r', 'p', 'f', 'v', 'm', 'pg_catalog')
+2026-03-26 17:43:27,529 - sqlalchemy.engine.Engine - INFO - SELECT pg_catalog.pg_class.relname 
+FROM pg_catalog.pg_class JOIN pg_catalog.pg_namespace ON pg_catalog.pg_namespace.oid = pg_catalog.pg_class.relnamespace 
+WHERE pg_catalog.pg_class.relname = $1::VARCHAR AND pg_catalog.pg_class.relkind = ANY (ARRAY[$2::VARCHAR, $3::VARCHAR, $4::VARCHAR, $5::VARCHAR, $6::VARCHAR]) AND pg_catalog.pg_table_is_visible(pg_catalog.pg_class.oid) AND pg_catalog.pg_namespace.nspname != $7::VARCHAR
+2026-03-26 17:43:27,529 - sqlalchemy.engine.Engine - INFO - [cached since 0.006668s ago] ('module', 'r', 'p', 'f', 'v', 'm', 'pg_catalog')
+2026-03-26 17:43:27,530 - sqlalchemy.engine.Engine - INFO - SELECT pg_catalog.pg_class.relname 
+FROM pg_catalog.pg_class JOIN pg_catalog.pg_namespace ON pg_catalog.pg_namespace.oid = pg_catalog.pg_class.relnamespace 
+WHERE pg_catalog.pg_class.relname = $1::VARCHAR AND pg_catalog.pg_class.relkind = ANY (ARRAY[$2::VARCHAR, $3::VARCHAR, $4::VARCHAR, $5::VARCHAR, $6::VARCHAR]) AND pg_catalog.pg_table_is_visible(pg_catalog.pg_class.oid) AND pg_catalog.pg_namespace.nspname != $7::VARCHAR
+2026-03-26 17:43:27,531 - sqlalchemy.engine.Engine - INFO - [cached since 0.007756s ago] ('lecture', 'r', 'p', 'f', 'v', 'm', 'pg_catalog')
+2026-03-26 17:43:27,531 - sqlalchemy.engine.Engine - INFO - SELECT pg_catalog.pg_class.relname 
+FROM pg_catalog.pg_class JOIN pg_catalog.pg_namespace ON pg_catalog.pg_namespace.oid = pg_catalog.pg_class.relnamespace 
+WHERE pg_catalog.pg_class.relname = $1::VARCHAR AND pg_catalog.pg_class.relkind = ANY (ARRAY[$2::VARCHAR, $3::VARCHAR, $4::VARCHAR, $5::VARCHAR, $6::VARCHAR]) AND pg_catalog.pg_table_is_visible(pg_catalog.pg_class.oid) AND pg_catalog.pg_namespace.nspname != $7::VARCHAR
+2026-03-26 17:43:27,531 - sqlalchemy.engine.Engine - INFO - [cached since 0.008685s ago] ('lecture_content', 'r', 'p', 'f', 'v', 'm', 'pg_catalog')
+2026-03-26 17:43:27,532 - sqlalchemy.engine.Engine - INFO - SELECT pg_catalog.pg_class.relname 
+FROM pg_catalog.pg_class JOIN pg_catalog.pg_namespace ON pg_catalog.pg_namespace.oid = pg_catalog.pg_class.relnamespace 
+WHERE pg_catalog.pg_class.relname = $1::VARCHAR AND pg_catalog.pg_class.relkind = ANY (ARRAY[$2::VARCHAR, $3::VARCHAR, $4::VARCHAR, $5::VARCHAR, $6::VARCHAR]) AND pg_catalog.pg_table_is_visible(pg_catalog.pg_class.oid) AND pg_catalog.pg_namespace.nspname != $7::VARCHAR
+2026-03-26 17:43:27,532 - sqlalchemy.engine.Engine - INFO - [cached since 0.009425s ago] ('lecture_content_doc', 'r', 'p', 'f', 'v', 'm', 'pg_catalog')
+2026-03-26 17:43:27,533 - sqlalchemy.engine.Engine - INFO - SELECT pg_catalog.pg_class.relname 
+FROM pg_catalog.pg_class JOIN pg_catalog.pg_namespace ON pg_catalog.pg_namespace.oid = pg_catalog.pg_class.relnamespace 
+WHERE pg_catalog.pg_class.relname = $1::VARCHAR AND pg_catalog.pg_class.relkind = ANY (ARRAY[$2::VARCHAR, $3::VARCHAR, $4::VARCHAR, $5::VARCHAR, $6::VARCHAR]) AND pg_catalog.pg_table_is_visible(pg_catalog.pg_class.oid) AND pg_catalog.pg_namespace.nspname != $7::VARCHAR
+2026-03-26 17:43:27,533 - sqlalchemy.engine.Engine - INFO - [cached since 0.01017s ago] ('lecture_progress', 'r', 'p', 'f', 'v', 'm', 'pg_catalog')
+2026-03-26 17:43:27,534 - sqlalchemy.engine.Engine - INFO - SELECT pg_catalog.pg_class.relname 
+FROM pg_catalog.pg_class JOIN pg_catalog.pg_namespace ON pg_catalog.pg_namespace.oid = pg_catalog.pg_class.relnamespace 
+WHERE pg_catalog.pg_class.relname = $1::VARCHAR AND pg_catalog.pg_class.relkind = ANY (ARRAY[$2::VARCHAR, $3::VARCHAR, $4::VARCHAR, $5::VARCHAR, $6::VARCHAR]) AND pg_catalog.pg_table_is_visible(pg_catalog.pg_class.oid) AND pg_catalog.pg_namespace.nspname != $7::VARCHAR
+2026-03-26 17:43:27,534 - sqlalchemy.engine.Engine - INFO - [cached since 0.0109s ago] ('user_recommended_courses', 'r', 'p', 'f', 'v', 'm', 'pg_catalog')
+2026-03-26 17:43:27,534 - sqlalchemy.engine.Engine - INFO - SELECT pg_catalog.pg_class.relname 
+FROM pg_catalog.pg_class JOIN pg_catalog.pg_namespace ON pg_catalog.pg_namespace.oid = pg_catalog.pg_class.relnamespace 
+WHERE pg_catalog.pg_class.relname = $1::VARCHAR AND pg_catalog.pg_class.relkind = ANY (ARRAY[$2::VARCHAR, $3::VARCHAR, $4::VARCHAR, $5::VARCHAR, $6::VARCHAR]) AND pg_catalog.pg_table_is_visible(pg_catalog.pg_class.oid) AND pg_catalog.pg_namespace.nspname != $7::VARCHAR
+2026-03-26 17:43:27,535 - sqlalchemy.engine.Engine - INFO - [cached since 0.01172s ago] ('bookmarked_materials', 'r', 'p', 'f', 'v', 'm', 'pg_catalog')
+2026-03-26 17:43:27,535 - sqlalchemy.engine.Engine - INFO - SELECT pg_catalog.pg_class.relname 
+FROM pg_catalog.pg_class JOIN pg_catalog.pg_namespace ON pg_catalog.pg_namespace.oid = pg_catalog.pg_class.relnamespace 
+WHERE pg_catalog.pg_class.relname = $1::VARCHAR AND pg_catalog.pg_class.relkind = ANY (ARRAY[$2::VARCHAR, $3::VARCHAR, $4::VARCHAR, $5::VARCHAR, $6::VARCHAR]) AND pg_catalog.pg_table_is_visible(pg_catalog.pg_class.oid) AND pg_catalog.pg_namespace.nspname != $7::VARCHAR
+2026-03-26 17:43:27,535 - sqlalchemy.engine.Engine - INFO - [cached since 0.01248s ago] ('user_roles', 'r', 'p', 'f', 'v', 'm', 'pg_catalog')
+2026-03-26 17:43:27,536 - sqlalchemy.engine.Engine - INFO - SELECT pg_catalog.pg_class.relname 
+FROM pg_catalog.pg_class JOIN pg_catalog.pg_namespace ON pg_catalog.pg_namespace.oid = pg_catalog.pg_class.relnamespace 
+WHERE pg_catalog.pg_class.relname = $1::VARCHAR AND pg_catalog.pg_class.relkind = ANY (ARRAY[$2::VARCHAR, $3::VARCHAR, $4::VARCHAR, $5::VARCHAR, $6::VARCHAR]) AND pg_catalog.pg_table_is_visible(pg_catalog.pg_class.oid) AND pg_catalog.pg_namespace.nspname != $7::VARCHAR
+2026-03-26 17:43:27,536 - sqlalchemy.engine.Engine - INFO - [cached since 0.01328s ago] ('roles', 'r', 'p', 'f', 'v', 'm', 'pg_catalog')
+2026-03-26 17:43:27,537 - sqlalchemy.engine.Engine - INFO - SELECT pg_catalog.pg_class.relname 
+FROM pg_catalog.pg_class JOIN pg_catalog.pg_namespace ON pg_catalog.pg_namespace.oid = pg_catalog.pg_class.relnamespace 
+WHERE pg_catalog.pg_class.relname = $1::VARCHAR AND pg_catalog.pg_class.relkind = ANY (ARRAY[$2::VARCHAR, $3::VARCHAR, $4::VARCHAR, $5::VARCHAR, $6::VARCHAR]) AND pg_catalog.pg_table_is_visible(pg_catalog.pg_class.oid) AND pg_catalog.pg_namespace.nspname != $7::VARCHAR
+2026-03-26 17:43:27,537 - sqlalchemy.engine.Engine - INFO - [cached since 0.01401s ago] ('users', 'r', 'p', 'f', 'v', 'm', 'pg_catalog')
+2026-03-26 17:43:27,537 - sqlalchemy.engine.Engine - INFO - SELECT pg_catalog.pg_class.relname 
+FROM pg_catalog.pg_class JOIN pg_catalog.pg_namespace ON pg_catalog.pg_namespace.oid = pg_catalog.pg_class.relnamespace 
+WHERE pg_catalog.pg_class.relname = $1::VARCHAR AND pg_catalog.pg_class.relkind = ANY (ARRAY[$2::VARCHAR, $3::VARCHAR, $4::VARCHAR, $5::VARCHAR, $6::VARCHAR]) AND pg_catalog.pg_table_is_visible(pg_catalog.pg_class.oid) AND pg_catalog.pg_namespace.nspname != $7::VARCHAR
+2026-03-26 17:43:27,538 - sqlalchemy.engine.Engine - INFO - [cached since 0.01475s ago] ('quizzes', 'r', 'p', 'f', 'v', 'm', 'pg_catalog')
+2026-03-26 17:43:27,538 - sqlalchemy.engine.Engine - INFO - SELECT pg_catalog.pg_class.relname 
+FROM pg_catalog.pg_class JOIN pg_catalog.pg_namespace ON pg_catalog.pg_namespace.oid = pg_catalog.pg_class.relnamespace 
+WHERE pg_catalog.pg_class.relname = $1::VARCHAR AND pg_catalog.pg_class.relkind = ANY (ARRAY[$2::VARCHAR, $3::VARCHAR, $4::VARCHAR, $5::VARCHAR, $6::VARCHAR]) AND pg_catalog.pg_table_is_visible(pg_catalog.pg_class.oid) AND pg_catalog.pg_namespace.nspname != $7::VARCHAR
+2026-03-26 17:43:27,538 - sqlalchemy.engine.Engine - INFO - [cached since 0.01548s ago] ('quiz_questions', 'r', 'p', 'f', 'v', 'm', 'pg_catalog')
+2026-03-26 17:43:27,539 - sqlalchemy.engine.Engine - INFO - SELECT pg_catalog.pg_class.relname 
+FROM pg_catalog.pg_class JOIN pg_catalog.pg_namespace ON pg_catalog.pg_namespace.oid = pg_catalog.pg_class.relnamespace 
+WHERE pg_catalog.pg_class.relname = $1::VARCHAR AND pg_catalog.pg_class.relkind = ANY (ARRAY[$2::VARCHAR, $3::VARCHAR, $4::VARCHAR, $5::VARCHAR, $6::VARCHAR]) AND pg_catalog.pg_table_is_visible(pg_catalog.pg_class.oid) AND pg_catalog.pg_namespace.nspname != $7::VARCHAR
+2026-03-26 17:43:27,539 - sqlalchemy.engine.Engine - INFO - [cached since 0.01615s ago] ('quiz_attempts', 'r', 'p', 'f', 'v', 'm', 'pg_catalog')
+2026-03-26 17:43:27,539 - sqlalchemy.engine.Engine - INFO - SELECT pg_catalog.pg_class.relname 
+FROM pg_catalog.pg_class JOIN pg_catalog.pg_namespace ON pg_catalog.pg_namespace.oid = pg_catalog.pg_class.relnamespace 
+WHERE pg_catalog.pg_class.relname = $1::VARCHAR AND pg_catalog.pg_class.relkind = ANY (ARRAY[$2::VARCHAR, $3::VARCHAR, $4::VARCHAR, $5::VARCHAR, $6::VARCHAR]) AND pg_catalog.pg_table_is_visible(pg_catalog.pg_class.oid) AND pg_catalog.pg_namespace.nspname != $7::VARCHAR
+2026-03-26 17:43:27,540 - sqlalchemy.engine.Engine - INFO - [cached since 0.01681s ago] ('chat_sessions', 'r', 'p', 'f', 'v', 'm', 'pg_catalog')
+2026-03-26 17:43:27,540 - sqlalchemy.engine.Engine - INFO - SELECT pg_catalog.pg_class.relname 
+FROM pg_catalog.pg_class JOIN pg_catalog.pg_namespace ON pg_catalog.pg_namespace.oid = pg_catalog.pg_class.relnamespace 
+WHERE pg_catalog.pg_class.relname = $1::VARCHAR AND pg_catalog.pg_class.relkind = ANY (ARRAY[$2::VARCHAR, $3::VARCHAR, $4::VARCHAR, $5::VARCHAR, $6::VARCHAR]) AND pg_catalog.pg_table_is_visible(pg_catalog.pg_class.oid) AND pg_catalog.pg_namespace.nspname != $7::VARCHAR
+2026-03-26 17:43:27,540 - sqlalchemy.engine.Engine - INFO - [cached since 0.01749s ago] ('chat_messages', 'r', 'p', 'f', 'v', 'm', 'pg_catalog')
+2026-03-26 17:43:27,541 - sqlalchemy.engine.Engine - INFO - SELECT pg_catalog.pg_class.relname 
+FROM pg_catalog.pg_class JOIN pg_catalog.pg_namespace ON pg_catalog.pg_namespace.oid = pg_catalog.pg_class.relnamespace 
+WHERE pg_catalog.pg_class.relname = $1::VARCHAR AND pg_catalog.pg_class.relkind = ANY (ARRAY[$2::VARCHAR, $3::VARCHAR, $4::VARCHAR, $5::VARCHAR, $6::VARCHAR]) AND pg_catalog.pg_table_is_visible(pg_catalog.pg_class.oid) AND pg_catalog.pg_namespace.nspname != $7::VARCHAR
+2026-03-26 17:43:27,541 - sqlalchemy.engine.Engine - INFO - [cached since 0.01825s ago] ('faqs', 'r', 'p', 'f', 'v', 'm', 'pg_catalog')
+2026-03-26 17:43:27,542 - sqlalchemy.engine.Engine - INFO - SELECT pg_catalog.pg_class.relname 
+FROM pg_catalog.pg_class JOIN pg_catalog.pg_namespace ON pg_catalog.pg_namespace.oid = pg_catalog.pg_class.relnamespace 
+WHERE pg_catalog.pg_class.relname = $1::VARCHAR AND pg_catalog.pg_class.relkind = ANY (ARRAY[$2::VARCHAR, $3::VARCHAR, $4::VARCHAR, $5::VARCHAR, $6::VARCHAR]) AND pg_catalog.pg_table_is_visible(pg_catalog.pg_class.oid) AND pg_catalog.pg_namespace.nspname != $7::VARCHAR
+2026-03-26 17:43:27,542 - sqlalchemy.engine.Engine - INFO - [cached since 0.01916s ago] ('system_settings', 'r', 'p', 'f', 'v', 'm', 'pg_catalog')
+2026-03-26 17:43:27,543 - sqlalchemy.engine.Engine - INFO - SELECT pg_catalog.pg_class.relname 
+FROM pg_catalog.pg_class JOIN pg_catalog.pg_namespace ON pg_catalog.pg_namespace.oid = pg_catalog.pg_class.relnamespace 
+WHERE pg_catalog.pg_class.relname = $1::VARCHAR AND pg_catalog.pg_class.relkind = ANY (ARRAY[$2::VARCHAR, $3::VARCHAR, $4::VARCHAR, $5::VARCHAR, $6::VARCHAR]) AND pg_catalog.pg_table_is_visible(pg_catalog.pg_class.oid) AND pg_catalog.pg_namespace.nspname != $7::VARCHAR
+2026-03-26 17:43:27,543 - sqlalchemy.engine.Engine - INFO - [cached since 0.02019s ago] ('integrations', 'r', 'p', 'f', 'v', 'm', 'pg_catalog')
+2026-03-26 17:43:27,544 - sqlalchemy.engine.Engine - INFO - SELECT pg_catalog.pg_class.relname 
+FROM pg_catalog.pg_class JOIN pg_catalog.pg_namespace ON pg_catalog.pg_namespace.oid = pg_catalog.pg_class.relnamespace 
+WHERE pg_catalog.pg_class.relname = $1::VARCHAR AND pg_catalog.pg_class.relkind = ANY (ARRAY[$2::VARCHAR, $3::VARCHAR, $4::VARCHAR, $5::VARCHAR, $6::VARCHAR]) AND pg_catalog.pg_table_is_visible(pg_catalog.pg_class.oid) AND pg_catalog.pg_namespace.nspname != $7::VARCHAR
+2026-03-26 17:43:27,544 - sqlalchemy.engine.Engine - INFO - [cached since 0.021s ago] ('course_notification', 'r', 'p', 'f', 'v', 'm', 'pg_catalog')
+2026-03-26 17:43:27,544 - sqlalchemy.engine.Engine - INFO - SELECT pg_catalog.pg_class.relname 
+FROM pg_catalog.pg_class JOIN pg_catalog.pg_namespace ON pg_catalog.pg_namespace.oid = pg_catalog.pg_class.relnamespace 
+WHERE pg_catalog.pg_class.relname = $1::VARCHAR AND pg_catalog.pg_class.relkind = ANY (ARRAY[$2::VARCHAR, $3::VARCHAR, $4::VARCHAR, $5::VARCHAR, $6::VARCHAR]) AND pg_catalog.pg_table_is_visible(pg_catalog.pg_class.oid) AND pg_catalog.pg_namespace.nspname != $7::VARCHAR
+2026-03-26 17:43:27,545 - sqlalchemy.engine.Engine - INFO - [cached since 0.02179s ago] ('system_notification', 'r', 'p', 'f', 'v', 'm', 'pg_catalog')
+2026-03-26 17:43:27,545 - sqlalchemy.engine.Engine - INFO - SELECT pg_catalog.pg_class.relname 
+FROM pg_catalog.pg_class JOIN pg_catalog.pg_namespace ON pg_catalog.pg_namespace.oid = pg_catalog.pg_class.relnamespace 
+WHERE pg_catalog.pg_class.relname = $1::VARCHAR AND pg_catalog.pg_class.relkind = ANY (ARRAY[$2::VARCHAR, $3::VARCHAR, $4::VARCHAR, $5::VARCHAR, $6::VARCHAR]) AND pg_catalog.pg_table_is_visible(pg_catalog.pg_class.oid) AND pg_catalog.pg_namespace.nspname != $7::VARCHAR
+2026-03-26 17:43:27,545 - sqlalchemy.engine.Engine - INFO - [cached since 0.02262s ago] ('user_notification_status', 'r', 'p', 'f', 'v', 'm', 'pg_catalog')
+2026-03-26 17:43:27,548 - sqlalchemy.engine.Engine - INFO - SELECT pg_catalog.pg_type.typname 
+FROM pg_catalog.pg_type JOIN pg_catalog.pg_namespace ON pg_catalog.pg_namespace.oid = pg_catalog.pg_type.typnamespace 
+WHERE pg_catalog.pg_type.typname = $1::VARCHAR AND pg_catalog.pg_type_is_visible(pg_catalog.pg_type.oid) AND pg_catalog.pg_namespace.nspname != $2::VARCHAR
+2026-03-26 17:43:27,548 - sqlalchemy.engine.Engine - INFO - [generated in 0.00034s] ('coursestatus', 'pg_catalog')
+2026-03-26 17:43:27,550 - sqlalchemy.engine.Engine - INFO - CREATE TYPE coursestatus AS ENUM ('DRAFT', 'ACTIVE', 'ARCHIVED')
+2026-03-26 17:43:27,550 - sqlalchemy.engine.Engine - INFO - [no key 0.00023s] ()
+2026-03-26 17:43:27,553 - sqlalchemy.engine.Engine - INFO - SELECT pg_catalog.pg_type.typname 
+FROM pg_catalog.pg_type JOIN pg_catalog.pg_namespace ON pg_catalog.pg_namespace.oid = pg_catalog.pg_type.typnamespace 
+WHERE pg_catalog.pg_type.typname = $1::VARCHAR AND pg_catalog.pg_type_is_visible(pg_catalog.pg_type.oid) AND pg_catalog.pg_namespace.nspname != $2::VARCHAR
+2026-03-26 17:43:27,553 - sqlalchemy.engine.Engine - INFO - [cached since 0.005296s ago] ('enrollmentstatus', 'pg_catalog')
+2026-03-26 17:43:27,555 - sqlalchemy.engine.Engine - INFO - CREATE TYPE enrollmentstatus AS ENUM ('ENROLLED', 'COMPLETED', 'DROPPED', 'WAITLISTED')
+2026-03-26 17:43:27,555 - sqlalchemy.engine.Engine - INFO - [no key 0.00022s] ()
+2026-03-26 17:43:27,556 - sqlalchemy.engine.Engine - INFO - 
+CREATE TABLE roles (
+	id SERIAL NOT NULL, 
+	name VARCHAR NOT NULL, 
+	PRIMARY KEY (id), 
+	UNIQUE (name)
+)
+
+
+2026-03-26 17:43:27,557 - sqlalchemy.engine.Engine - INFO - [no key 0.00024s] ()
+2026-03-26 17:43:27,568 - sqlalchemy.engine.Engine - INFO - 
+CREATE TABLE users (
+	id UUID NOT NULL, 
+	email VARCHAR NOT NULL, 
+	name VARCHAR NOT NULL, 
+	hashed_password VARCHAR NOT NULL, 
+	role VARCHAR NOT NULL, 
+	is_google_user BOOLEAN NOT NULL, 
+	picture VARCHAR, 
+	created_at TIMESTAMP WITHOUT TIME ZONE NOT NULL, 
+	updated_at TIMESTAMP WITHOUT TIME ZONE NOT NULL, 
+	PRIMARY KEY (id), 
+	UNIQUE (email)
+)
+
+
+2026-03-26 17:43:27,569 - sqlalchemy.engine.Engine - INFO - [no key 0.00030s] ()
+2026-03-26 17:43:27,572 - sqlalchemy.engine.Engine - INFO - CREATE INDEX idx_user_role_created ON users (role, created_at)
+2026-03-26 17:43:27,573 - sqlalchemy.engine.Engine - INFO - [no key 0.00025s] ()
+2026-03-26 17:43:27,574 - sqlalchemy.engine.Engine - INFO - CREATE INDEX idx_user_email ON users (email)
+2026-03-26 17:43:27,574 - sqlalchemy.engine.Engine - INFO - [no key 0.00021s] ()
+2026-03-26 17:43:27,576 - sqlalchemy.engine.Engine - INFO - CREATE INDEX idx_user_role ON users (role)
+2026-03-26 17:43:27,577 - sqlalchemy.engine.Engine - INFO - [no key 0.00024s] ()
+2026-03-26 17:43:27,579 - sqlalchemy.engine.Engine - INFO - 
+CREATE TABLE faqs (
+	id UUID NOT NULL, 
+	question VARCHAR(500) NOT NULL, 
+	answer TEXT NOT NULL, 
+	category_id VARCHAR(50) NOT NULL, 
+	priority INTEGER, 
+	created_at TIMESTAMP WITH TIME ZONE DEFAULT now(), 
+	updated_at TIMESTAMP WITH TIME ZONE, 
+	PRIMARY KEY (id)
+)
+
+
+2026-03-26 17:43:27,579 - sqlalchemy.engine.Engine - INFO - [no key 0.00025s] ()
+2026-03-26 17:43:27,582 - sqlalchemy.engine.Engine - INFO - 
+CREATE TABLE system_settings (
+	id SERIAL NOT NULL, 
+	key VARCHAR, 
+	value JSON, 
+	PRIMARY KEY (id)
+)
+
+
+2026-03-26 17:43:27,582 - sqlalchemy.engine.Engine - INFO - [no key 0.00024s] ()
+2026-03-26 17:43:27,585 - sqlalchemy.engine.Engine - INFO - CREATE UNIQUE INDEX ix_system_settings_key ON system_settings (key)
+2026-03-26 17:43:27,585 - sqlalchemy.engine.Engine - INFO - [no key 0.00021s] ()
+2026-03-26 17:43:27,587 - sqlalchemy.engine.Engine - INFO - CREATE INDEX ix_system_settings_id ON system_settings (id)
+2026-03-26 17:43:27,587 - sqlalchemy.engine.Engine - INFO - [no key 0.00025s] ()
+2026-03-26 17:43:27,589 - sqlalchemy.engine.Engine - INFO - 
+CREATE TABLE integrations (
+	id SERIAL NOT NULL, 
+	name VARCHAR, 
+	type VARCHAR, 
+	endpoint VARCHAR, 
+	api_key VARCHAR, 
+	status VARCHAR, 
+	PRIMARY KEY (id)
+)
+
+
+2026-03-26 17:43:27,589 - sqlalchemy.engine.Engine - INFO - [no key 0.00020s] ()
+2026-03-26 17:43:27,593 - sqlalchemy.engine.Engine - INFO - CREATE INDEX ix_integrations_id ON integrations (id)
+2026-03-26 17:43:27,593 - sqlalchemy.engine.Engine - INFO - [no key 0.00027s] ()
+2026-03-26 17:43:27,595 - sqlalchemy.engine.Engine - INFO - CREATE INDEX ix_integrations_name ON integrations (name)
+2026-03-26 17:43:27,595 - sqlalchemy.engine.Engine - INFO - [no key 0.00024s] ()
+2026-03-26 17:43:27,598 - sqlalchemy.engine.Engine - INFO - 
+CREATE TABLE courses (
+	id UUID NOT NULL, 
+	name VARCHAR NOT NULL, 
+	code VARCHAR NOT NULL, 
+	title VARCHAR NOT NULL, 
+	syllabus VARCHAR, 
+	description TEXT, 
+	credits INTEGER NOT NULL, 
+	duration INTEGER NOT NULL, 
+	semester VARCHAR NOT NULL, 
+	year INTEGER NOT NULL, 
+	status coursestatus NOT NULL, 
+	level VARCHAR, 
+	start_date TIMESTAMP WITH TIME ZONE, 
+	end_date TIMESTAMP WITH TIME ZONE, 
+	enrollment_limit INTEGER, 
+	waitlist_limit INTEGER, 
+	capacity INTEGER, 
+	enrolled_count INTEGER NOT NULL, 
+	image VARCHAR, 
+	created_at TIMESTAMP WITH TIME ZONE, 
+	updated_at TIMESTAMP WITH TIME ZONE, 
+	created_by UUID NOT NULL, 
+	faculty_id UUID, 
+	PRIMARY KEY (id), 
+	UNIQUE (code), 
+	FOREIGN KEY(created_by) REFERENCES users (id), 
+	FOREIGN KEY(faculty_id) REFERENCES users (id)
+)
+
+
+2026-03-26 17:43:27,598 - sqlalchemy.engine.Engine - INFO - [no key 0.00027s] ()
+2026-03-26 17:43:27,603 - sqlalchemy.engine.Engine - INFO - CREATE INDEX idx_course_semester_year ON courses (semester, year)
+2026-03-26 17:43:27,603 - sqlalchemy.engine.Engine - INFO - [no key 0.00023s] ()
+2026-03-26 17:43:27,605 - sqlalchemy.engine.Engine - INFO - CREATE INDEX idx_course_created_by ON courses (created_by)
+2026-03-26 17:43:27,605 - sqlalchemy.engine.Engine - INFO - [no key 0.00025s] ()
+2026-03-26 17:43:27,606 - sqlalchemy.engine.Engine - INFO - CREATE INDEX idx_course_status ON courses (status)
+2026-03-26 17:43:27,606 - sqlalchemy.engine.Engine - INFO - [no key 0.00021s] ()
+2026-03-26 17:43:27,608 - sqlalchemy.engine.Engine - INFO - CREATE INDEX idx_course_faculty ON courses (faculty_id)
+2026-03-26 17:43:27,608 - sqlalchemy.engine.Engine - INFO - [no key 0.00025s] ()
+2026-03-26 17:43:27,611 - sqlalchemy.engine.Engine - INFO - 
+CREATE TABLE user_recommended_courses (
+	id SERIAL NOT NULL, 
+	user_id UUID NOT NULL, 
+	title VARCHAR NOT NULL, 
+	type VARCHAR NOT NULL, 
+	progress INTEGER, 
+	thumbnail_path VARCHAR NOT NULL, 
+	reason TEXT, 
+	tutorial_url VARCHAR NOT NULL, 
+	PRIMARY KEY (id), 
+	FOREIGN KEY(user_id) REFERENCES users (id) ON DELETE CASCADE
+)
+
+
+2026-03-26 17:43:27,611 - sqlalchemy.engine.Engine - INFO - [no key 0.00033s] ()
+2026-03-26 17:43:27,615 - sqlalchemy.engine.Engine - INFO - CREATE INDEX idx_recommended_user ON user_recommended_courses (user_id)
+2026-03-26 17:43:27,615 - sqlalchemy.engine.Engine - INFO - [no key 0.00024s] ()
+2026-03-26 17:43:27,617 - sqlalchemy.engine.Engine - INFO - 
+CREATE TABLE user_roles (
+	user_id UUID NOT NULL, 
+	role_id INTEGER NOT NULL, 
+	PRIMARY KEY (user_id, role_id), 
+	FOREIGN KEY(user_id) REFERENCES users (id) ON DELETE CASCADE, 
+	FOREIGN KEY(role_id) REFERENCES roles (id) ON DELETE CASCADE
+)
+
+
+2026-03-26 17:43:27,617 - sqlalchemy.engine.Engine - INFO - [no key 0.00024s] ()
+2026-03-26 17:43:27,621 - sqlalchemy.engine.Engine - INFO - 
+CREATE TABLE chat_sessions (
+	id SERIAL NOT NULL, 
+	session_id VARCHAR(50), 
+	user_id UUID, 
+	title VARCHAR(255), 
+	created_at TIMESTAMP WITHOUT TIME ZONE, 
+	updated_at TIMESTAMP WITHOUT TIME ZONE, 
+	PRIMARY KEY (id), 
+	FOREIGN KEY(user_id) REFERENCES users (id)
+)
+
+
+2026-03-26 17:43:27,621 - sqlalchemy.engine.Engine - INFO - [no key 0.00025s] ()
+2026-03-26 17:43:27,624 - sqlalchemy.engine.Engine - INFO - CREATE INDEX ix_chat_sessions_id ON chat_sessions (id)
+2026-03-26 17:43:27,624 - sqlalchemy.engine.Engine - INFO - [no key 0.00022s] ()
+2026-03-26 17:43:27,627 - sqlalchemy.engine.Engine - INFO - CREATE UNIQUE INDEX ix_chat_sessions_session_id ON chat_sessions (session_id)
+2026-03-26 17:43:27,627 - sqlalchemy.engine.Engine - INFO - [no key 0.00032s] ()
+2026-03-26 17:43:27,629 - sqlalchemy.engine.Engine - INFO - 
+CREATE TABLE system_notification (
+	id SERIAL NOT NULL, 
+	type VARCHAR NOT NULL, 
+	priority VARCHAR NOT NULL, 
+	category VARCHAR NOT NULL, 
+	title VARCHAR NOT NULL, 
+	message TEXT NOT NULL, 
+	timestamp TIMESTAMP WITH TIME ZONE NOT NULL, 
+	sent_by UUID NOT NULL, 
+	PRIMARY KEY (id), 
+	FOREIGN KEY(sent_by) REFERENCES users (id) ON DELETE CASCADE
+)
+
+
+2026-03-26 17:43:27,629 - sqlalchemy.engine.Engine - INFO - [no key 0.00027s] ()
+2026-03-26 17:43:27,633 - sqlalchemy.engine.Engine - INFO - CREATE INDEX ix_system_notification_id ON system_notification (id)
+2026-03-26 17:43:27,633 - sqlalchemy.engine.Engine - INFO - [no key 0.00024s] ()
+2026-03-26 17:43:27,635 - sqlalchemy.engine.Engine - INFO - 
+CREATE TABLE user_notification_status (
+	id SERIAL NOT NULL, 
+	user_id UUID NOT NULL, 
+	notification_id INTEGER NOT NULL, 
+	type VARCHAR NOT NULL, 
+	read BOOLEAN, 
+	PRIMARY KEY (id), 
+	FOREIGN KEY(user_id) REFERENCES users (id) ON DELETE CASCADE
+)
+
+
+2026-03-26 17:43:27,635 - sqlalchemy.engine.Engine - INFO - [no key 0.00023s] ()
+2026-03-26 17:43:27,638 - sqlalchemy.engine.Engine - INFO - CREATE INDEX ix_user_notification_status_id ON user_notification_status (id)
+2026-03-26 17:43:27,639 - sqlalchemy.engine.Engine - INFO - [no key 0.00023s] ()
+2026-03-26 17:43:27,642 - sqlalchemy.engine.Engine - INFO - 
+CREATE TABLE assignments (
+	id UUID NOT NULL, 
+	title VARCHAR NOT NULL, 
+	description TEXT NOT NULL, 
+	course_id UUID NOT NULL, 
+	module_id UUID, 
+	created_by UUID NOT NULL, 
+	created_at TIMESTAMP WITHOUT TIME ZONE, 
+	updated_at TIMESTAMP WITHOUT TIME ZONE, 
+	due_date TIMESTAMP WITHOUT TIME ZONE NOT NULL, 
+	points INTEGER, 
+	status VARCHAR, 
+	submission_type VARCHAR, 
+	allow_late_submissions BOOLEAN, 
+	late_penalty FLOAT, 
+	group_submission BOOLEAN, 
+	max_group_size INTEGER, 
+	enable_peer_review BOOLEAN, 
+	peer_reviewers_count INTEGER, 
+	peer_review_due_date TIMESTAMP WITHOUT TIME ZONE, 
+	plagiarism_detection BOOLEAN, 
+	file_types VARCHAR, 
+	max_file_size INTEGER, 
+	settings JSON, 
+	PRIMARY KEY (id), 
+	FOREIGN KEY(course_id) REFERENCES courses (id), 
+	FOREIGN KEY(created_by) REFERENCES users (id)
+)
+
+
+2026-03-26 17:43:27,642 - sqlalchemy.engine.Engine - INFO - [no key 0.00052s] ()
+2026-03-26 17:43:27,647 - sqlalchemy.engine.Engine - INFO - COMMENT ON COLUMN assignments.id IS 'Unique identifier for the assignment'
+2026-03-26 17:43:27,647 - sqlalchemy.engine.Engine - INFO - [no key 0.00025s] ()
+2026-03-26 17:43:27,648 - sqlalchemy.engine.Engine - INFO - COMMENT ON COLUMN assignments.title IS 'Assignment title'
+2026-03-26 17:43:27,648 - sqlalchemy.engine.Engine - INFO - [no key 0.00021s] ()
+2026-03-26 17:43:27,649 - sqlalchemy.engine.Engine - INFO - COMMENT ON COLUMN assignments.description IS 'Assignment description'
+2026-03-26 17:43:27,649 - sqlalchemy.engine.Engine - INFO - [no key 0.00017s] ()
+2026-03-26 17:43:27,650 - sqlalchemy.engine.Engine - INFO - COMMENT ON COLUMN assignments.course_id IS 'Foreign key to the course this assignment belongs to'
+2026-03-26 17:43:27,650 - sqlalchemy.engine.Engine - INFO - [no key 0.00020s] ()
+2026-03-26 17:43:27,651 - sqlalchemy.engine.Engine - INFO - COMMENT ON COLUMN assignments.module_id IS 'Foreign key to the module this assignment belongs to (optional)'
+2026-03-26 17:43:27,651 - sqlalchemy.engine.Engine - INFO - [no key 0.00020s] ()
+2026-03-26 17:43:27,652 - sqlalchemy.engine.Engine - INFO - COMMENT ON COLUMN assignments.created_by IS 'Foreign key to the user who created the assignment'
+2026-03-26 17:43:27,652 - sqlalchemy.engine.Engine - INFO - [no key 0.00019s] ()
+2026-03-26 17:43:27,653 - sqlalchemy.engine.Engine - INFO - COMMENT ON COLUMN assignments.created_at IS 'Timestamp when the assignment was created'
+2026-03-26 17:43:27,653 - sqlalchemy.engine.Engine - INFO - [no key 0.00016s] ()
+2026-03-26 17:43:27,654 - sqlalchemy.engine.Engine - INFO - COMMENT ON COLUMN assignments.updated_at IS 'Timestamp when the assignment was last updated'
+2026-03-26 17:43:27,654 - sqlalchemy.engine.Engine - INFO - [no key 0.00016s] ()
+2026-03-26 17:43:27,655 - sqlalchemy.engine.Engine - INFO - COMMENT ON COLUMN assignments.due_date IS 'Deadline for assignment submission'
+2026-03-26 17:43:27,655 - sqlalchemy.engine.Engine - INFO - [no key 0.00018s] ()
+2026-03-26 17:43:27,656 - sqlalchemy.engine.Engine - INFO - COMMENT ON COLUMN assignments.points IS 'Maximum points possible for this assignment'
+2026-03-26 17:43:27,656 - sqlalchemy.engine.Engine - INFO - [no key 0.00017s] ()
+2026-03-26 17:43:27,656 - sqlalchemy.engine.Engine - INFO - COMMENT ON COLUMN assignments.status IS 'Assignment status (draft, published, archived)'
+2026-03-26 17:43:27,657 - sqlalchemy.engine.Engine - INFO - [no key 0.00016s] ()
+2026-03-26 17:43:27,657 - sqlalchemy.engine.Engine - INFO - COMMENT ON COLUMN assignments.submission_type IS 'Type of submission (file, text, url, media)'
+2026-03-26 17:43:27,657 - sqlalchemy.engine.Engine - INFO - [no key 0.00018s] ()
+2026-03-26 17:43:27,659 - sqlalchemy.engine.Engine - INFO - COMMENT ON COLUMN assignments.allow_late_submissions IS 'Whether late submissions are allowed'
+2026-03-26 17:43:27,659 - sqlalchemy.engine.Engine - INFO - [no key 0.00029s] ()
+2026-03-26 17:43:27,660 - sqlalchemy.engine.Engine - INFO - COMMENT ON COLUMN assignments.late_penalty IS 'Percentage penalty per day for late submissions'
+2026-03-26 17:43:27,660 - sqlalchemy.engine.Engine - INFO - [no key 0.00024s] ()
+2026-03-26 17:43:27,661 - sqlalchemy.engine.Engine - INFO - COMMENT ON COLUMN assignments.group_submission IS 'Whether group submissions are allowed'
+2026-03-26 17:43:27,662 - sqlalchemy.engine.Engine - INFO - [no key 0.00020s] ()
+2026-03-26 17:43:27,663 - sqlalchemy.engine.Engine - INFO - COMMENT ON COLUMN assignments.max_group_size IS 'Maximum number of students in a group'
+2026-03-26 17:43:27,663 - sqlalchemy.engine.Engine - INFO - [no key 0.00029s] ()
+2026-03-26 17:43:27,664 - sqlalchemy.engine.Engine - INFO - COMMENT ON COLUMN assignments.enable_peer_review IS 'Whether peer review is enabled'
+2026-03-26 17:43:27,664 - sqlalchemy.engine.Engine - INFO - [no key 0.00019s] ()
+2026-03-26 17:43:27,665 - sqlalchemy.engine.Engine - INFO - COMMENT ON COLUMN assignments.peer_reviewers_count IS 'Number of peer reviewers per submission'
+2026-03-26 17:43:27,665 - sqlalchemy.engine.Engine - INFO - [no key 0.00018s] ()
+2026-03-26 17:43:27,666 - sqlalchemy.engine.Engine - INFO - COMMENT ON COLUMN assignments.peer_review_due_date IS 'Deadline for peer reviews'
+2026-03-26 17:43:27,666 - sqlalchemy.engine.Engine - INFO - [no key 0.00016s] ()
+2026-03-26 17:43:27,667 - sqlalchemy.engine.Engine - INFO - COMMENT ON COLUMN assignments.plagiarism_detection IS 'Whether plagiarism detection is enabled'
+2026-03-26 17:43:27,667 - sqlalchemy.engine.Engine - INFO - [no key 0.00020s] ()
+2026-03-26 17:43:27,667 - sqlalchemy.engine.Engine - INFO - COMMENT ON COLUMN assignments.file_types IS 'Allowed file types for submission'
+2026-03-26 17:43:27,668 - sqlalchemy.engine.Engine - INFO - [no key 0.00017s] ()
+2026-03-26 17:43:27,668 - sqlalchemy.engine.Engine - INFO - COMMENT ON COLUMN assignments.max_file_size IS 'Maximum file size in MB'
+2026-03-26 17:43:27,669 - sqlalchemy.engine.Engine - INFO - [no key 0.00017s] ()
+2026-03-26 17:43:27,669 - sqlalchemy.engine.Engine - INFO - COMMENT ON COLUMN assignments.settings IS 'Additional settings as JSON'
+2026-03-26 17:43:27,669 - sqlalchemy.engine.Engine - INFO - [no key 0.00019s] ()
+2026-03-26 17:43:27,671 - sqlalchemy.engine.Engine - INFO - 
+CREATE TABLE user_courses (
+	user_id UUID NOT NULL, 
+	course_id UUID NOT NULL, 
+	PRIMARY KEY (user_id, course_id), 
+	FOREIGN KEY(user_id) REFERENCES users (id) ON DELETE CASCADE, 
+	FOREIGN KEY(course_id) REFERENCES courses (id) ON DELETE CASCADE
+)
+
+
+2026-03-26 17:43:27,671 - sqlalchemy.engine.Engine - INFO - [no key 0.00021s] ()
+2026-03-26 17:43:27,674 - sqlalchemy.engine.Engine - INFO - 
+CREATE TABLE course_enrollments (
+	id UUID NOT NULL, 
+	course_id UUID NOT NULL, 
+	student_id UUID NOT NULL, 
+	user_id UUID NOT NULL, 
+	status enrollmentstatus NOT NULL, 
+	enrollment_date TIMESTAMP WITH TIME ZONE NOT NULL, 
+	completion_date TIMESTAMP WITH TIME ZONE, 
+	grade VARCHAR, 
+	created_at TIMESTAMP WITH TIME ZONE NOT NULL, 
+	updated_at TIMESTAMP WITH TIME ZONE NOT NULL, 
+	certificate_url VARCHAR, 
+	progress FLOAT, 
+	last_activity TIMESTAMP WITHOUT TIME ZONE, 
+	is_favorited BOOLEAN, 
+	PRIMARY KEY (id), 
+	FOREIGN KEY(course_id) REFERENCES courses (id) ON DELETE CASCADE, 
+	FOREIGN KEY(student_id) REFERENCES users (id) ON DELETE CASCADE, 
+	FOREIGN KEY(user_id) REFERENCES users (id) ON DELETE CASCADE
+)
+
+
+2026-03-26 17:43:27,674 - sqlalchemy.engine.Engine - INFO - [no key 0.00031s] ()
+2026-03-26 17:43:27,679 - sqlalchemy.engine.Engine - INFO - CREATE INDEX idx_enrollment_student ON course_enrollments (student_id)
+2026-03-26 17:43:27,679 - sqlalchemy.engine.Engine - INFO - [no key 0.00026s] ()
+2026-03-26 17:43:27,681 - sqlalchemy.engine.Engine - INFO - CREATE INDEX idx_enrollment_course ON course_enrollments (course_id)
+2026-03-26 17:43:27,681 - sqlalchemy.engine.Engine - INFO - [no key 0.00021s] ()
+2026-03-26 17:43:27,682 - sqlalchemy.engine.Engine - INFO - CREATE INDEX idx_enrollment_user ON course_enrollments (user_id)
+2026-03-26 17:43:27,683 - sqlalchemy.engine.Engine - INFO - [no key 0.00022s] ()
+2026-03-26 17:43:27,684 - sqlalchemy.engine.Engine - INFO - CREATE INDEX idx_enrollment_status ON course_enrollments (status)
+2026-03-26 17:43:27,684 - sqlalchemy.engine.Engine - INFO - [no key 0.00020s] ()
+2026-03-26 17:43:27,686 - sqlalchemy.engine.Engine - INFO - 
+CREATE TABLE module (
+	id SERIAL NOT NULL, 
+	course_id UUID NOT NULL, 
+	title VARCHAR NOT NULL, 
+	position INTEGER NOT NULL, 
+	PRIMARY KEY (id), 
+	CONSTRAINT module_position_unique UNIQUE (course_id, position), 
+	FOREIGN KEY(course_id) REFERENCES courses (id) ON DELETE CASCADE
+)
+
+
+2026-03-26 17:43:27,686 - sqlalchemy.engine.Engine - INFO - [no key 0.00024s] ()
+2026-03-26 17:43:27,690 - sqlalchemy.engine.Engine - INFO - CREATE INDEX idx_module_course ON module (course_id)
+2026-03-26 17:43:27,690 - sqlalchemy.engine.Engine - INFO - [no key 0.00023s] ()
+2026-03-26 17:43:27,693 - sqlalchemy.engine.Engine - INFO - 
+CREATE TABLE bookmarked_materials (
+	id SERIAL NOT NULL, 
+	user_id UUID NOT NULL, 
+	title VARCHAR NOT NULL, 
+	type VARCHAR NOT NULL, 
+	author VARCHAR, 
+	date_bookmarked TIMESTAMP WITHOUT TIME ZONE, 
+	course_id UUID, 
+	PRIMARY KEY (id), 
+	FOREIGN KEY(user_id) REFERENCES users (id) ON DELETE CASCADE, 
+	FOREIGN KEY(course_id) REFERENCES courses (id) ON DELETE CASCADE
+)
+
+
+2026-03-26 17:43:27,693 - sqlalchemy.engine.Engine - INFO - [no key 0.00034s] ()
+2026-03-26 17:43:27,697 - sqlalchemy.engine.Engine - INFO - CREATE INDEX idx_bookmarked_type ON bookmarked_materials (type)
+2026-03-26 17:43:27,697 - sqlalchemy.engine.Engine - INFO - [no key 0.00024s] ()
+2026-03-26 17:43:27,698 - sqlalchemy.engine.Engine - INFO - CREATE INDEX idx_bookmarked_user ON bookmarked_materials (user_id)
+2026-03-26 17:43:27,699 - sqlalchemy.engine.Engine - INFO - [no key 0.00021s] ()
+2026-03-26 17:43:27,700 - sqlalchemy.engine.Engine - INFO - CREATE INDEX idx_bookmarked_course ON bookmarked_materials (course_id)
+2026-03-26 17:43:27,700 - sqlalchemy.engine.Engine - INFO - [no key 0.00021s] ()
+2026-03-26 17:43:27,702 - sqlalchemy.engine.Engine - INFO - 
+CREATE TABLE quizzes (
+	id SERIAL NOT NULL, 
+	course_id UUID NOT NULL, 
+	title VARCHAR NOT NULL, 
+	description TEXT, 
+	topic VARCHAR, 
+	time_limit INTEGER, 
+	passing_score FLOAT, 
+	created_at TIMESTAMP WITHOUT TIME ZONE, 
+	updated_at TIMESTAMP WITHOUT TIME ZONE, 
+	PRIMARY KEY (id), 
+	FOREIGN KEY(course_id) REFERENCES courses (id) ON DELETE CASCADE
+)
+
+
+2026-03-26 17:43:27,702 - sqlalchemy.engine.Engine - INFO - [no key 0.00022s] ()
+2026-03-26 17:43:27,706 - sqlalchemy.engine.Engine - INFO - CREATE INDEX idx_quiz_course ON quizzes (course_id)
+2026-03-26 17:43:27,706 - sqlalchemy.engine.Engine - INFO - [no key 0.00023s] ()
+2026-03-26 17:43:27,707 - sqlalchemy.engine.Engine - INFO - CREATE INDEX idx_quiz_topic ON quizzes (topic)
+2026-03-26 17:43:27,708 - sqlalchemy.engine.Engine - INFO - [no key 0.00026s] ()
+2026-03-26 17:43:27,710 - sqlalchemy.engine.Engine - INFO - 
+CREATE TABLE chat_messages (
+	id SERIAL NOT NULL, 
+	chat_session_id INTEGER, 
+	content TEXT NOT NULL, 
+	type VARCHAR(10) NOT NULL, 
+	timestamp TIMESTAMP WITHOUT TIME ZONE, 
+	function_calls TEXT, 
+	PRIMARY KEY (id), 
+	FOREIGN KEY(chat_session_id) REFERENCES chat_sessions (id) ON DELETE CASCADE
+)
+
+
+2026-03-26 17:43:27,710 - sqlalchemy.engine.Engine - INFO - [no key 0.00032s] ()
+2026-03-26 17:43:27,715 - sqlalchemy.engine.Engine - INFO - CREATE INDEX ix_chat_messages_id ON chat_messages (id)
+2026-03-26 17:43:27,715 - sqlalchemy.engine.Engine - INFO - [no key 0.00024s] ()
+2026-03-26 17:43:27,717 - sqlalchemy.engine.Engine - INFO - 
+CREATE TABLE course_notification (
+	id SERIAL NOT NULL, 
+	type VARCHAR NOT NULL, 
+	priority VARCHAR NOT NULL, 
+	category VARCHAR NOT NULL, 
+	title VARCHAR NOT NULL, 
+	message TEXT NOT NULL, 
+	timestamp TIMESTAMP WITH TIME ZONE NOT NULL, 
+	course_id UUID NOT NULL, 
+	sent_by UUID NOT NULL, 
+	PRIMARY KEY (id), 
+	FOREIGN KEY(course_id) REFERENCES courses (id) ON DELETE CASCADE, 
+	FOREIGN KEY(sent_by) REFERENCES users (id) ON DELETE CASCADE
+)
+
+
+2026-03-26 17:43:27,717 - sqlalchemy.engine.Engine - INFO - [no key 0.00024s] ()
+2026-03-26 17:43:27,722 - sqlalchemy.engine.Engine - INFO - CREATE INDEX ix_course_notification_id ON course_notification (id)
+2026-03-26 17:43:27,722 - sqlalchemy.engine.Engine - INFO - [no key 0.00021s] ()
+2026-03-26 17:43:27,725 - sqlalchemy.engine.Engine - INFO - 
+CREATE TABLE submissions (
+	id UUID NOT NULL, 
+	assignment_id UUID NOT NULL, 
+	student_id UUID NOT NULL, 
+	group_id UUID, 
+	submitted_at TIMESTAMP WITHOUT TIME ZONE, 
+	updated_at TIMESTAMP WITHOUT TIME ZONE, 
+	status VARCHAR, 
+	content TEXT, 
+	file_path VARCHAR, 
+	file_name VARCHAR, 
+	file_size INTEGER, 
+	file_type VARCHAR, 
+	url VARCHAR, 
+	grade FLOAT, 
+	feedback TEXT, 
+	graded_by UUID, 
+	graded_at TIMESTAMP WITHOUT TIME ZONE, 
+	plagiarism_score FLOAT, 
+	plagiarism_report JSON, 
+	late_submission BOOLEAN, 
+	late_penalty_applied FLOAT, 
+	PRIMARY KEY (id), 
+	FOREIGN KEY(assignment_id) REFERENCES assignments (id), 
+	FOREIGN KEY(student_id) REFERENCES users (id), 
+	FOREIGN KEY(graded_by) REFERENCES users (id)
+)
+
+
+2026-03-26 17:43:27,725 - sqlalchemy.engine.Engine - INFO - [no key 0.00038s] ()
+2026-03-26 17:43:27,730 - sqlalchemy.engine.Engine - INFO - COMMENT ON COLUMN submissions.id IS 'Unique identifier for the submission'
+2026-03-26 17:43:27,730 - sqlalchemy.engine.Engine - INFO - [no key 0.00026s] ()
+2026-03-26 17:43:27,731 - sqlalchemy.engine.Engine - INFO - COMMENT ON COLUMN submissions.assignment_id IS 'Foreign key to the assignment this submission is for'
+2026-03-26 17:43:27,731 - sqlalchemy.engine.Engine - INFO - [no key 0.00019s] ()
+2026-03-26 17:43:27,732 - sqlalchemy.engine.Engine - INFO - COMMENT ON COLUMN submissions.student_id IS 'Foreign key to the student who submitted'
+2026-03-26 17:43:27,732 - sqlalchemy.engine.Engine - INFO - [no key 0.00018s] ()
+2026-03-26 17:43:27,733 - sqlalchemy.engine.Engine - INFO - COMMENT ON COLUMN submissions.group_id IS 'Foreign key to the group if this is a group submission (optional)'
+2026-03-26 17:43:27,733 - sqlalchemy.engine.Engine - INFO - [no key 0.00018s] ()
+2026-03-26 17:43:27,734 - sqlalchemy.engine.Engine - INFO - COMMENT ON COLUMN submissions.submitted_at IS 'Timestamp when the submission was made'
+2026-03-26 17:43:27,734 - sqlalchemy.engine.Engine - INFO - [no key 0.00017s] ()
+2026-03-26 17:43:27,735 - sqlalchemy.engine.Engine - INFO - COMMENT ON COLUMN submissions.updated_at IS 'Timestamp when the submission was last updated'
+2026-03-26 17:43:27,735 - sqlalchemy.engine.Engine - INFO - [no key 0.00016s] ()
+2026-03-26 17:43:27,736 - sqlalchemy.engine.Engine - INFO - COMMENT ON COLUMN submissions.status IS 'Submission status (draft, submitted, graded)'
+2026-03-26 17:43:27,736 - sqlalchemy.engine.Engine - INFO - [no key 0.00016s] ()
+2026-03-26 17:43:27,737 - sqlalchemy.engine.Engine - INFO - COMMENT ON COLUMN submissions.content IS 'Text content of the submission (for text submissions)'
+2026-03-26 17:43:27,737 - sqlalchemy.engine.Engine - INFO - [no key 0.00017s] ()
+2026-03-26 17:43:27,738 - sqlalchemy.engine.Engine - INFO - COMMENT ON COLUMN submissions.file_path IS 'Path to the submitted file (for file submissions)'
+2026-03-26 17:43:27,738 - sqlalchemy.engine.Engine - INFO - [no key 0.00025s] ()
+2026-03-26 17:43:27,739 - sqlalchemy.engine.Engine - INFO - COMMENT ON COLUMN submissions.file_name IS 'Original filename of the submitted file'
+2026-03-26 17:43:27,739 - sqlalchemy.engine.Engine - INFO - [no key 0.00017s] ()
+2026-03-26 17:43:27,740 - sqlalchemy.engine.Engine - INFO - COMMENT ON COLUMN submissions.file_size IS 'Size of the submitted file in bytes'
+2026-03-26 17:43:27,740 - sqlalchemy.engine.Engine - INFO - [no key 0.00019s] ()
+2026-03-26 17:43:27,741 - sqlalchemy.engine.Engine - INFO - COMMENT ON COLUMN submissions.file_type IS 'MIME type of the submitted file'
+2026-03-26 17:43:27,741 - sqlalchemy.engine.Engine - INFO - [no key 0.00022s] ()
+2026-03-26 17:43:27,742 - sqlalchemy.engine.Engine - INFO - COMMENT ON COLUMN submissions.url IS 'URL for the submission (for url submissions)'
+2026-03-26 17:43:27,743 - sqlalchemy.engine.Engine - INFO - [no key 0.00037s] ()
+2026-03-26 17:43:27,744 - sqlalchemy.engine.Engine - INFO - COMMENT ON COLUMN submissions.grade IS 'Numeric grade assigned to the submission'
+2026-03-26 17:43:27,744 - sqlalchemy.engine.Engine - INFO - [no key 0.00025s] ()
+2026-03-26 17:43:27,745 - sqlalchemy.engine.Engine - INFO - COMMENT ON COLUMN submissions.feedback IS 'Feedback text from the instructor'
+2026-03-26 17:43:27,745 - sqlalchemy.engine.Engine - INFO - [no key 0.00021s] ()
+2026-03-26 17:43:27,746 - sqlalchemy.engine.Engine - INFO - COMMENT ON COLUMN submissions.graded_by IS 'Foreign key to the user who graded the submission'
+2026-03-26 17:43:27,746 - sqlalchemy.engine.Engine - INFO - [no key 0.00027s] ()
+2026-03-26 17:43:27,747 - sqlalchemy.engine.Engine - INFO - COMMENT ON COLUMN submissions.graded_at IS 'Timestamp when the submission was graded'
+2026-03-26 17:43:27,748 - sqlalchemy.engine.Engine - INFO - [no key 0.00019s] ()
+2026-03-26 17:43:27,748 - sqlalchemy.engine.Engine - INFO - COMMENT ON COLUMN submissions.plagiarism_score IS 'Plagiarism detection score (0-100)'
+2026-03-26 17:43:27,749 - sqlalchemy.engine.Engine - INFO - [no key 0.00018s] ()
+2026-03-26 17:43:27,749 - sqlalchemy.engine.Engine - INFO - COMMENT ON COLUMN submissions.plagiarism_report IS 'Detailed plagiarism report'
+2026-03-26 17:43:27,750 - sqlalchemy.engine.Engine - INFO - [no key 0.00019s] ()
+2026-03-26 17:43:27,750 - sqlalchemy.engine.Engine - INFO - COMMENT ON COLUMN submissions.late_submission IS 'Whether this was submitted after the due date'
+2026-03-26 17:43:27,751 - sqlalchemy.engine.Engine - INFO - [no key 0.00019s] ()
+2026-03-26 17:43:27,751 - sqlalchemy.engine.Engine - INFO - COMMENT ON COLUMN submissions.late_penalty_applied IS 'Percentage penalty applied for late submission'
+2026-03-26 17:43:27,752 - sqlalchemy.engine.Engine - INFO - [no key 0.00020s] ()
+2026-03-26 17:43:27,753 - sqlalchemy.engine.Engine - INFO - 
+CREATE TABLE lecture (
+	id SERIAL NOT NULL, 
+	module_id INTEGER NOT NULL, 
+	content_type VARCHAR(50) NOT NULL, 
+	position INTEGER NOT NULL, 
+	PRIMARY KEY (id), 
+	FOREIGN KEY(module_id) REFERENCES module (id) ON DELETE CASCADE
+)
+
+
+2026-03-26 17:43:27,753 - sqlalchemy.engine.Engine - INFO - [no key 0.00022s] ()
+2026-03-26 17:43:27,756 - sqlalchemy.engine.Engine - INFO - 
+CREATE TABLE quiz_questions (
+	id SERIAL NOT NULL, 
+	quiz_id INTEGER NOT NULL, 
+	question_text TEXT NOT NULL, 
+	question_type VARCHAR NOT NULL, 
+	options TEXT, 
+	correct_answer TEXT NOT NULL, 
+	points INTEGER, 
+	explanation TEXT, 
+	PRIMARY KEY (id), 
+	FOREIGN KEY(quiz_id) REFERENCES quizzes (id) ON DELETE CASCADE
+)
+
+
+2026-03-26 17:43:27,756 - sqlalchemy.engine.Engine - INFO - [no key 0.00029s] ()
+2026-03-26 17:43:27,760 - sqlalchemy.engine.Engine - INFO - CREATE INDEX idx_question_quiz ON quiz_questions (quiz_id)
+2026-03-26 17:43:27,760 - sqlalchemy.engine.Engine - INFO - [no key 0.00028s] ()
+2026-03-26 17:43:27,763 - sqlalchemy.engine.Engine - INFO - 
+CREATE TABLE quiz_attempts (
+	id SERIAL NOT NULL, 
+	quiz_id INTEGER NOT NULL, 
+	user_id UUID NOT NULL, 
+	score FLOAT NOT NULL, 
+	time_taken INTEGER, 
+	answers TEXT, 
+	feedback TEXT, 
+	started_at TIMESTAMP WITHOUT TIME ZONE, 
+	completion_date TIMESTAMP WITHOUT TIME ZONE, 
+	PRIMARY KEY (id), 
+	FOREIGN KEY(quiz_id) REFERENCES quizzes (id) ON DELETE CASCADE, 
+	FOREIGN KEY(user_id) REFERENCES users (id) ON DELETE CASCADE
+)
+
+
+2026-03-26 17:43:27,763 - sqlalchemy.engine.Engine - INFO - [no key 0.00028s] ()
+2026-03-26 17:43:27,767 - sqlalchemy.engine.Engine - INFO - CREATE INDEX idx_attempt_quiz ON quiz_attempts (quiz_id)
+2026-03-26 17:43:27,767 - sqlalchemy.engine.Engine - INFO - [no key 0.00022s] ()
+2026-03-26 17:43:27,768 - sqlalchemy.engine.Engine - INFO - CREATE INDEX idx_attempt_user ON quiz_attempts (user_id)
+2026-03-26 17:43:27,768 - sqlalchemy.engine.Engine - INFO - [no key 0.00021s] ()
+2026-03-26 17:43:27,770 - sqlalchemy.engine.Engine - INFO - CREATE INDEX idx_attempt_completion ON quiz_attempts (completion_date)
+2026-03-26 17:43:27,770 - sqlalchemy.engine.Engine - INFO - [no key 0.00022s] ()
+2026-03-26 17:43:27,772 - sqlalchemy.engine.Engine - INFO - 
+CREATE TABLE lecture_content (
+	id SERIAL NOT NULL, 
+	lecture_id INTEGER NOT NULL, 
+	title VARCHAR NOT NULL, 
+	content_url TEXT NOT NULL, 
+	content_desc TEXT, 
+	PRIMARY KEY (id), 
+	FOREIGN KEY(lecture_id) REFERENCES lecture (id) ON DELETE CASCADE
+)
+
+
+2026-03-26 17:43:27,772 - sqlalchemy.engine.Engine - INFO - [no key 0.00022s] ()
+2026-03-26 17:43:27,776 - sqlalchemy.engine.Engine - INFO - 
+CREATE TABLE lecture_content_doc (
+	id SERIAL NOT NULL, 
+	lecture_id INTEGER NOT NULL, 
+	title VARCHAR NOT NULL, 
+	content_desc TEXT, 
+	content_doc VARCHAR NOT NULL, 
+	file_type VARCHAR NOT NULL, 
+	PRIMARY KEY (id), 
+	FOREIGN KEY(lecture_id) REFERENCES lecture (id) ON DELETE CASCADE
+)
+
+
+2026-03-26 17:43:27,777 - sqlalchemy.engine.Engine - INFO - [no key 0.00028s] ()
+2026-03-26 17:43:27,781 - sqlalchemy.engine.Engine - INFO - 
+CREATE TABLE lecture_progress (
+	id SERIAL NOT NULL, 
+	user_id UUID NOT NULL, 
+	lecture_id INTEGER NOT NULL, 
+	completion_status FLOAT, 
+	time_spent INTEGER, 
+	last_accessed TIMESTAMP WITHOUT TIME ZONE, 
+	notes TEXT, 
+	PRIMARY KEY (id), 
+	FOREIGN KEY(user_id) REFERENCES users (id) ON DELETE CASCADE, 
+	FOREIGN KEY(lecture_id) REFERENCES lecture (id) ON DELETE CASCADE
+)
+
+
+2026-03-26 17:43:27,781 - sqlalchemy.engine.Engine - INFO - [no key 0.00025s] ()
+2026-03-26 17:43:27,785 - sqlalchemy.engine.Engine - INFO - CREATE INDEX idx_lecture_progress_lecture ON lecture_progress (lecture_id)
+2026-03-26 17:43:27,785 - sqlalchemy.engine.Engine - INFO - [no key 0.00021s] ()
+2026-03-26 17:43:27,787 - sqlalchemy.engine.Engine - INFO - CREATE INDEX idx_lecture_progress_user ON lecture_progress (user_id)
+2026-03-26 17:43:27,787 - sqlalchemy.engine.Engine - INFO - [no key 0.00019s] ()
+2026-03-26 17:43:27,788 - app.database - INFO - All database tables created successfully
+2026-03-26 17:43:27,789 - sqlalchemy.engine.Engine - INFO - COMMIT
+2026-03-26 17:43:27,792 - root - INFO - Database models initialized successfully
+2026-03-26 17:43:27,794 - app.services.redis_service - INFO - Redis client initialized successfully
+2026-03-26 17:43:27,794 - root - INFO - Monitoring service initialization started in background
+2026-03-26 17:43:27,794 - root - INFO - Redis cache cleanup started in background
+2026-03-26 17:43:27,794 - root - INFO - Application startup completed. Ready to serve requests.
+2026-03-26 17:43:27,794 - app.services.monitoring_service - INFO - Started monitoring background tasks
+2026-03-26 17:43:27,794 - root - INFO - Monitoring service started successfully
+2026-03-26 17:43:30,043 - app.services.monitoring_service - WARNING - New alert created: {'id': 'alert_1774527210', 'type': 'high_disk_usage', 'severity': 'warning', 'message': 'Disk usage is 91.4%, above threshold of 90.0%', 'timestamp': datetime.datetime(2026, 3, 26, 17, 43, 30, 42871), 'resolved': False, 'resolved_at': None, 'resolved_by': None, 'acknowledgement': None}
+2026-03-26 17:43:30,043 - root - INFO - Redis cache cleanup completed
+2026-03-26 17:44:02,277 - app.services.monitoring_service - WARNING - New alert created: {'id': 'alert_1774527242', 'type': 'high_disk_usage', 'severity': 'warning', 'message': 'Disk usage is 91.4%, above threshold of 90.0%', 'timestamp': datetime.datetime(2026, 3, 26, 17, 44, 2, 277436), 'resolved': False, 'resolved_at': None, 'resolved_by': None, 'acknowledgement': None}
+2026-03-26 17:44:34,503 - app.services.monitoring_service - WARNING - New alert created: {'id': 'alert_1774527274', 'type': 'high_disk_usage', 'severity': 'warning', 'message': 'Disk usage is 91.4%, above threshold of 90.0%', 'timestamp': datetime.datetime(2026, 3, 26, 17, 44, 34, 503348), 'resolved': False, 'resolved_at': None, 'resolved_by': None, 'acknowledgement': None}
+2026-03-26 17:45:06,793 - app.services.monitoring_service - WARNING - New alert created: {'id': 'alert_1774527306', 'type': 'high_disk_usage', 'severity': 'warning', 'message': 'Disk usage is 91.5%, above threshold of 90.0%', 'timestamp': datetime.datetime(2026, 3, 26, 17, 45, 6, 793320), 'resolved': False, 'resolved_at': None, 'resolved_by': None, 'acknowledgement': None}
+2026-03-26 17:45:39,026 - app.services.monitoring_service - WARNING - New alert created: {'id': 'alert_1774527339', 'type': 'high_disk_usage', 'severity': 'warning', 'message': 'Disk usage is 91.5%, above threshold of 90.0%', 'timestamp': datetime.datetime(2026, 3, 26, 17, 45, 39, 26438), 'resolved': False, 'resolved_at': None, 'resolved_by': None, 'acknowledgement': None}
+2026-03-26 17:45:46,816 - app.http - INFO - Request started
+2026-03-26 17:45:46,817 - app.http - INFO - Request completed
+2026-03-26 17:45:46,821 - app.http - INFO - Request started
+2026-03-26 17:45:46,823 - app.utils.jwt_utils - INFO - Attempting to decode token: eyJhbGciOi...
+2026-03-26 17:45:46,823 - app.utils.jwt_utils - ERROR - Invalid token: eyJhbGciOi... Error: Signature verification failed
+2026-03-26 17:45:46,824 - app.http - INFO - Request completed
+2026-03-26 17:46:11,411 - app.services.monitoring_service - WARNING - New alert created: {'id': 'alert_1774527371', 'type': 'high_disk_usage', 'severity': 'warning', 'message': 'Disk usage is 91.5%, above threshold of 90.0%', 'timestamp': datetime.datetime(2026, 3, 26, 17, 46, 11, 411148), 'resolved': False, 'resolved_at': None, 'resolved_by': None, 'acknowledgement': None}
+2026-03-26 17:46:43,712 - app.services.monitoring_service - WARNING - New alert created: {'id': 'alert_1774527403', 'type': 'high_disk_usage', 'severity': 'warning', 'message': 'Disk usage is 91.5%, above threshold of 90.0%', 'timestamp': datetime.datetime(2026, 3, 26, 17, 46, 43, 712817), 'resolved': False, 'resolved_at': None, 'resolved_by': None, 'acknowledgement': None}
+2026-03-26 17:47:15,985 - app.services.monitoring_service - WARNING - New alert created: {'id': 'alert_1774527435', 'type': 'high_disk_usage', 'severity': 'warning', 'message': 'Disk usage is 91.5%, above threshold of 90.0%', 'timestamp': datetime.datetime(2026, 3, 26, 17, 47, 15, 984922), 'resolved': False, 'resolved_at': None, 'resolved_by': None, 'acknowledgement': None}
+2026-03-26 17:47:48,292 - app.services.monitoring_service - WARNING - New alert created: {'id': 'alert_1774527468', 'type': 'high_disk_usage', 'severity': 'warning', 'message': 'Disk usage is 91.5%, above threshold of 90.0%', 'timestamp': datetime.datetime(2026, 3, 26, 17, 47, 48, 292427), 'resolved': False, 'resolved_at': None, 'resolved_by': None, 'acknowledgement': None}
+2026-03-26 17:48:20,511 - app.services.monitoring_service - WARNING - New alert created: {'id': 'alert_1774527500', 'type': 'high_disk_usage', 'severity': 'warning', 'message': 'Disk usage is 91.5%, above threshold of 90.0%', 'timestamp': datetime.datetime(2026, 3, 26, 17, 48, 20, 511667), 'resolved': False, 'resolved_at': None, 'resolved_by': None, 'acknowledgement': None}
+2026-03-26 17:48:52,830 - app.services.monitoring_service - WARNING - New alert created: {'id': 'alert_1774527532', 'type': 'high_disk_usage', 'severity': 'warning', 'message': 'Disk usage is 91.5%, above threshold of 90.0%', 'timestamp': datetime.datetime(2026, 3, 26, 17, 48, 52, 830075), 'resolved': False, 'resolved_at': None, 'resolved_by': None, 'acknowledgement': None}
+2026-03-26 17:49:25,106 - app.services.monitoring_service - WARNING - New alert created: {'id': 'alert_1774527565', 'type': 'high_disk_usage', 'severity': 'warning', 'message': 'Disk usage is 91.5%, above threshold of 90.0%', 'timestamp': datetime.datetime(2026, 3, 26, 17, 49, 25, 106631), 'resolved': False, 'resolved_at': None, 'resolved_by': None, 'acknowledgement': None}
+2026-03-26 17:49:57,487 - app.services.monitoring_service - WARNING - New alert created: {'id': 'alert_1774527597', 'type': 'high_disk_usage', 'severity': 'warning', 'message': 'Disk usage is 91.5%, above threshold of 90.0%', 'timestamp': datetime.datetime(2026, 3, 26, 17, 49, 57, 487570), 'resolved': False, 'resolved_at': None, 'resolved_by': None, 'acknowledgement': None}
+2026-03-26 17:50:29,783 - app.services.monitoring_service - WARNING - New alert created: {'id': 'alert_1774527629', 'type': 'high_disk_usage', 'severity': 'warning', 'message': 'Disk usage is 91.5%, above threshold of 90.0%', 'timestamp': datetime.datetime(2026, 3, 26, 17, 50, 29, 783613), 'resolved': False, 'resolved_at': None, 'resolved_by': None, 'acknowledgement': None}
+2026-03-26 17:51:02,186 - app.services.monitoring_service - WARNING - New alert created: {'id': 'alert_1774527662', 'type': 'high_disk_usage', 'severity': 'warning', 'message': 'Disk usage is 91.5%, above threshold of 90.0%', 'timestamp': datetime.datetime(2026, 3, 26, 17, 51, 2, 186034), 'resolved': False, 'resolved_at': None, 'resolved_by': None, 'acknowledgement': None}
+2026-03-26 17:51:34,484 - app.services.monitoring_service - WARNING - New alert created: {'id': 'alert_1774527694', 'type': 'high_disk_usage', 'severity': 'warning', 'message': 'Disk usage is 91.5%, above threshold of 90.0%', 'timestamp': datetime.datetime(2026, 3, 26, 17, 51, 34, 484368), 'resolved': False, 'resolved_at': None, 'resolved_by': None, 'acknowledgement': None}
+2026-03-26 17:52:06,814 - app.services.monitoring_service - WARNING - New alert created: {'id': 'alert_1774527726', 'type': 'high_disk_usage', 'severity': 'warning', 'message': 'Disk usage is 91.5%, above threshold of 90.0%', 'timestamp': datetime.datetime(2026, 3, 26, 17, 52, 6, 814796), 'resolved': False, 'resolved_at': None, 'resolved_by': None, 'acknowledgement': None}
+2026-03-26 17:52:39,069 - app.services.monitoring_service - WARNING - New alert created: {'id': 'alert_1774527759', 'type': 'high_disk_usage', 'severity': 'warning', 'message': 'Disk usage is 91.5%, above threshold of 90.0%', 'timestamp': datetime.datetime(2026, 3, 26, 17, 52, 39, 69881), 'resolved': False, 'resolved_at': None, 'resolved_by': None, 'acknowledgement': None}
+2026-03-26 17:53:11,371 - app.services.monitoring_service - WARNING - New alert created: {'id': 'alert_1774527791', 'type': 'high_disk_usage', 'severity': 'warning', 'message': 'Disk usage is 91.5%, above threshold of 90.0%', 'timestamp': datetime.datetime(2026, 3, 26, 17, 53, 11, 371748), 'resolved': False, 'resolved_at': None, 'resolved_by': None, 'acknowledgement': None}
+2026-03-26 17:53:43,711 - app.services.monitoring_service - WARNING - New alert created: {'id': 'alert_1774527823', 'type': 'high_disk_usage', 'severity': 'warning', 'message': 'Disk usage is 91.5%, above threshold of 90.0%', 'timestamp': datetime.datetime(2026, 3, 26, 17, 53, 43, 711079), 'resolved': False, 'resolved_at': None, 'resolved_by': None, 'acknowledgement': None}

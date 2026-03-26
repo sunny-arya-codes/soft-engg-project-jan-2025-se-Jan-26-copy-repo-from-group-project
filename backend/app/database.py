@@ -53,8 +53,12 @@ if query_params:
 logger.info(f"Using database connection with SSL mode: {ssl_mode}")
 
 # Create async engine with proper SSL configuration and optimized connection settings
+asynchronous_url = cleaned_url.replace("postgresql://", "postgresql+asyncpg://")
+if "postgresql+asyncpg://" not in asynchronous_url:
+    asynchronous_url = asynchronous_url.replace("postgres://", "postgresql+asyncpg://")
+
 engine = create_async_engine(
-    cleaned_url.replace("postgres://", "postgresql+asyncpg://"),
+    asynchronous_url,
     future=True,
     echo=settings.DEBUG,  # Only echo in debug mode
     pool_size=settings.DB_POOL_SIZE,

@@ -182,6 +182,12 @@ async def seed_database():
     ssl_context.check_hostname = False
     ssl_context.verify_mode = ssl.CERT_NONE
     
+    # Use psycopg (v3) driver explicitly
+    if db_url.startswith("postgresql://"):
+        db_url = db_url.replace("postgresql://", "postgresql+psycopg://", 1)
+    elif db_url.startswith("postgres://"):
+        db_url = db_url.replace("postgres://", "postgresql+psycopg://", 1)
+
     engine = create_engine(
         db_url,
         connect_args={"sslmode": "require"} if "neon.tech" in db_url else {}

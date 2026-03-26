@@ -104,7 +104,7 @@ def reduce_package_size():
             
             # Other large packages
             "psutil",
-            "psycopg2_binary",
+            "psycopg",
             "passlib",
             "email_validator",
         ]
