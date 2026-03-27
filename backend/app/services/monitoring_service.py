@@ -67,6 +67,7 @@ class MonitoringService:
         self.alert_history = [] # Track alert history
         self.background_tasks = []
         self._is_running = False
+        self.active_connections: List[any] = []  # List of active WebSocket connections
 
     async def start_background_tasks(self):
         """Start background monitoring tasks"""
@@ -105,6 +106,7 @@ class MonitoringService:
             try:
                 await self.get_current_metrics()
                 await self.check_thresholds()
+                await self.broadcast_metrics()
                 await asyncio.sleep(settings.MONITORING_METRICS_COLLECTION_INTERVAL)
             except asyncio.CancelledError:
                 break
@@ -565,9 +567,36 @@ class MonitoringService:
             "performance_metrics": await self.get_current_metrics(),
             "performance_trends": await self.get_performance_trend(),
             "error_summary": await self.get_error_summary(),
-            "active_alerts": [alert for alert in self.alerts if not alert.resolved],
             "system_summary": await self.get_system_summary()
         }
+
+    async def broadcast_metrics(self):
+        """Broadcast current metrics to all connected WebSocket clients"""
+        if not hasattr(self, 'active_connections') or not self.active_connections or not self.metrics_history:
+            return
+            
+        current_metrics = self.metrics_history[-1]
+        message = {
+            "type": "performance_update",
+            "data": {
+                "timestamp": current_metrics.timestamp.isoformat(),
+                "response_time": current_metrics.response_time,
+                "request_rate": 150,  # Mock
+                "error_rate": current_metrics.error_rate,
+                "cpu_usage": current_metrics.cpu_usage,
+                "memory_usage": current_metrics.memory_usage,
+                "disk_usage": current_metrics.disk_usage
+            }
+        }
+        
+        # Create a copy of the list to avoid issues with removal while iterating
+        for connection in list(self.active_connections):
+            try:
+                await connection.send_json(message)
+            except Exception:
+                # Connection closed or error, remove it
+                if connection in self.active_connections:
+                    self.active_connections.remove(connection)
 
 # Create global instance
 monitoring_service = MonitoringService() 

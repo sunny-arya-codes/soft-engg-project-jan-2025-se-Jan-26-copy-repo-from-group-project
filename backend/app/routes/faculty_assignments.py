@@ -318,7 +318,7 @@ async def update_course_capacity(
             )
             
         # If user is faculty, check if they are assigned to this course
-        if current_user.get("role") == "faculty" and str(course.faculty_id) != current_user.get("id"):
+        if current_user.get("role") == "faculty" and str(course.faculty_id) != current_user.get("sub"):
             raise HTTPException(
                 status_code=status.HTTP_403_FORBIDDEN,
                 detail="You are not authorized to update this course"
@@ -371,7 +371,7 @@ async def get_course_enrollment_stats(
             
         # Check permissions
         user_role = current_user.get("role")
-        user_id = current_user.get("id")
+        user_id = current_user.get("sub")
         
         if user_role not in ["support", "admin", "superuser"] and str(course.faculty_id) != user_id:
             raise HTTPException(

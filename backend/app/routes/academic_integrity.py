@@ -660,7 +660,7 @@ async def get_all_flags(
                 "submission_id": uuid.uuid4(),
                 "assignment_id": uuid.uuid4(),
                 "student_id": uuid.uuid4(),
-                "flagged_by": current_user["id"],
+                "flagged_by": current_user["sub"],
                 "reason": "Suspected plagiarism",
                 "status": "pending",
                 "created_at": datetime.now(UTC),

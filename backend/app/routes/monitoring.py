@@ -1,4 +1,4 @@
-from fastapi import APIRouter, HTTPException, Query, Depends, Path, Request
+from fastapi import APIRouter, HTTPException, Query, Depends, Path, Request, WebSocket, WebSocketDisconnect
 from typing import List, Dict, Optional
 from datetime import datetime, timedelta
 from pydantic import BaseModel
@@ -848,3 +848,22 @@ async def check_database_health(request: Request):
             "status": "unhealthy",
             "error": str(e)
         } 
+@router.websocket("/ws")
+async def monitoring_websocket(websocket: WebSocket, token: Optional[str] = Query(None)):
+    """WebSocket endpoint for real-time monitoring updates"""
+    await websocket.accept()
+    if not token:
+        await websocket.close(code=4001)
+        return
+    try:
+        if not hasattr(monitoring_service, 'active_connections'):
+            monitoring_service.active_connections = []
+        monitoring_service.active_connections.append(websocket)
+        while True:
+            await websocket.receive_text()
+    except WebSocketDisconnect:
+        if websocket in monitoring_service.active_connections:
+            monitoring_service.active_connections.remove(websocket)
+    except Exception as e:
+        if websocket in monitoring_service.active_connections:
+            monitoring_service.active_connections.remove(websocket)

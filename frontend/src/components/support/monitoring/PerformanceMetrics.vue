@@ -347,9 +347,9 @@ export default {
       await fetchPerformanceData();
     });
 
-    watch([performanceHistory], () => {
-      updateChart();
-    });
+    // watch([performanceHistory], () => {
+    //   updateChart();
+    // });
 
     return {
       timeRange,

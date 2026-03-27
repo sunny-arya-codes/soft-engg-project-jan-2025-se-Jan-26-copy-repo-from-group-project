@@ -45,7 +45,7 @@ async def create_chat_session(
     """Create a new chat session"""
     # If user is authenticated, associate the session with them
     if current_user:
-        session_data.user_id = current_user.id
+        session_data.user_id = current_user.get("sub")
     
     chat_session = await ChatService.create_session(db, session_data)
     return chat_session
@@ -56,7 +56,7 @@ async def get_user_chat_sessions(
     db: AsyncSession = Depends(get_db)
 ):
     """Get all chat sessions for the current user"""
-    sessions = await ChatService.get_sessions_by_user(db, current_user.id)
+    sessions = await ChatService.get_sessions_by_user(db, current_user.get("sub"))
     return ChatHistoryResponse(sessions=sessions)
 
 @router.get("/sessions/{session_id}", response_model=ChatSession)
@@ -76,7 +76,7 @@ async def get_chat_session(
     
     # If the session belongs to a user, verify ownership
     if chat_session.user_id and current_user:
-        if chat_session.user_id != current_user.id:
+        if chat_session.user_id != current_user.get("sub"):
             raise HTTPException(
                 status_code=status.HTTP_403_FORBIDDEN,
                 detail="Not authorized to access this chat session"
@@ -103,7 +103,7 @@ async def update_chat_session(
     
     # If the session belongs to a user, verify ownership
     if existing_session.user_id and current_user:
-        if existing_session.user_id != current_user.id:
+        if existing_session.user_id != current_user.get("sub"):
             raise HTTPException(
                 status_code=status.HTTP_403_FORBIDDEN,
                 detail="Not authorized to update this chat session"
@@ -130,7 +130,7 @@ async def delete_chat_session(
     
     # If the session belongs to a user, verify ownership
     if existing_session.user_id and current_user:
-        if existing_session.user_id != current_user.id:
+        if existing_session.user_id != current_user.get("sub"):
             raise HTTPException(
                 status_code=status.HTTP_403_FORBIDDEN,
                 detail="Not authorized to delete this chat session"
@@ -163,7 +163,7 @@ async def add_message(
     
     # If the session belongs to a user, verify ownership
     if existing_session.user_id and current_user:
-        if existing_session.user_id != current_user.id:
+        if existing_session.user_id != current_user.get("sub"):
             raise HTTPException(
                 status_code=status.HTTP_403_FORBIDDEN,
                 detail="Not authorized to add messages to this chat session"
@@ -197,7 +197,7 @@ async def get_messages(
     
     # If the session belongs to a user, verify ownership
     if existing_session.user_id and current_user:
-        if existing_session.user_id != current_user.id:
+        if existing_session.user_id != current_user.get("sub"):
             raise HTTPException(
                 status_code=status.HTTP_403_FORBIDDEN,
                 detail="Not authorized to view messages for this chat session"
@@ -394,7 +394,7 @@ async def get_chat_history(
             if not current_user:
                 return {"sessions": []}
                 
-            sessions = await ChatService.get_sessions_by_user(db, current_user.id)
+            sessions = await ChatService.get_sessions_by_user(db, current_user.get("sub"))
             return {"sessions": sessions}
     except Exception as e:
         raise HTTPException(

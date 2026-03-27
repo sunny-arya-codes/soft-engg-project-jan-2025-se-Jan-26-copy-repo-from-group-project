@@ -196,7 +196,7 @@ export default {
 
         const headers = {
           headers: {
-            Authorization: `Bearer ${token}`, // Add token to Authorization header
+            Authorization: `Bearer ${token}`, 
           },
         }
 

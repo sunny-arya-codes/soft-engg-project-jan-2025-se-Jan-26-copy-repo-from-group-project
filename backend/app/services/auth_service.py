@@ -11,6 +11,7 @@ from fastapi.security import OAuth2PasswordBearer, OAuth2PasswordRequestForm
 import logging
 import uuid
 from datetime import datetime, UTC
+from app.config import settings
 
 logger = logging.getLogger(__name__)
 logging.basicConfig(level=logging.INFO)
@@ -161,35 +162,65 @@ async def get_or_create_user(db: AsyncSession, user_data: dict) -> User:
         if user:
             print(f"User already exists: {email}")
             
+            # Determine correct role based on config
+            correct_role = user.role
+            admin_email = settings.ADMIN_EMAIL
+            faculty_emails = [e.strip() for e in settings.FACULTY_EMAILS.split(",") if e.strip()]
+            
+            if email == admin_email:
+                correct_role = "admin"
+            elif email in faculty_emails:
+                correct_role = "faculty"
+            
+            updates = {}
             # Update the user's picture if they're logging in with Google and have a profile picture
             picture_url = user_data.get("picture")
             if picture_url and (user.picture is None or user.picture != picture_url):
                 print(f"Updating profile picture for user: {email}")
+                updates["picture"] = picture_url
+                user.picture = picture_url
+
+            # Update role if it has changed (e.g. upgraded to faculty)
+            if user.role != correct_role:
+                print(f"Upgrading role for user {email}: {user.role} -> {correct_role}")
+                updates["role"] = correct_role
+                user.role = correct_role
+
+            if updates:
+                set_clause = ", ".join([f"{k} = :{k}" for k in updates.keys()])
+                params = {**updates, "email": email}
                 await db.execute(
-                    text("UPDATE users SET picture = :picture WHERE email = :email"),
-                    {"picture": picture_url, "email": email}
+                    text(f"UPDATE users SET {set_clause} WHERE email = :email"),
+                    params
                 )
                 await db.commit()
-                
-                # Update the user object
-                user.picture = picture_url
                 
             return user
         else:
             print(f"Creating new user: {email}")
             
             # Determine role based on email domain
-            role = "student"  # Default role
+            # Determine role based on email domain and config
+            admin_email = settings.ADMIN_EMAIL
+            faculty_emails = [e.strip() for e in settings.FACULTY_EMAILS.split(",") if e.strip()]
             
-            if email:
+            if email == admin_email:
+                role = "admin"
+            elif email in faculty_emails:
+                role = "faculty"
+            elif email:
                 if email.endswith("@ds.study.iitm.ac.in"):
                     role = "student"
                 elif email.endswith("@study.iitm.ac.in"):
                     role = "support"
+                else:
+                    role = "student"  # Default role
+            else:
+                role = "student"
             
             # Create a new user using direct SQL
             user_id = uuid.uuid4()
-            now = datetime.now(UTC)
+            now = datetime.utcnow()
             
             await db.execute(
                 text("""
@@ -459,7 +490,7 @@ async def create_default_users(db: AsyncSession) -> None:
                 logger.info(f"Creating support user {support_email}")
                 hashed_password = pwd_context.hash("support123")
                 
-                now = datetime.now(UTC)
+                now = datetime.utcnow()
                 
                 # Use direct SQL to avoid ORM issues
                 support_id = str(uuid.uuid4())
@@ -495,7 +526,7 @@ async def create_default_users(db: AsyncSession) -> None:
                 logger.info(f"Creating faculty user {faculty_email}")
                 hashed_password = pwd_context.hash("faculty123")
                 
-                now = datetime.now(UTC)
+                now = datetime.utcnow()
                 
                 # Use direct SQL to avoid ORM issues
                 faculty_id = str(uuid.uuid4())
@@ -529,39 +560,42 @@ async def create_default_users(db: AsyncSession) -> None:
 
 def require_role(required_role):
     """
-    Create a dependency that requires a specific role or one of multiple roles.
-    
-    This function returns a dependency that checks if the current user has
-    the required role(s). It's used to protect routes that should only be
-    accessible to users with specific roles.
-    
-    Args:
-        required_role: The role or list of roles required to access the route
-        
-    Returns:
-        A dependency function that validates the user's role
-        
-    Raises:
-        HTTPException: If the user doesn't have the required role
+    Create a dependency that requires a specific role or one of multiple roles, 
+    accounting for role hierarchy: superuser > admin > support > faculty > student.
     """
+    ROLE_HIERARCHY = {
+        "superuser": 100,
+        "admin": 80,
+        "support": 60,
+        "faculty": 40,
+        "student": 20
+    }
+
     async def role_checker(token: str = Depends(oauth2_scheme)) -> dict:
         user = await get_current_user(token)
         user_role = user.get("role", "").lower()
         
+        user_level = ROLE_HIERARCHY.get(user_role, 0)
+        
         if isinstance(required_role, list):
-            # Check if user role is in the list of required roles
-            if user_role not in [r.lower() for r in required_role]:
+            # If any of the required roles have a level <= user's level, allow access
+            # This is a bit tricky: usually if a list is provided, it means "any of these"
+            # But with hierarchy, we want to say "if user level >= minimum required level among the list"
+            required_levels = [ROLE_HIERARCHY.get(r.lower(), 0) for r in required_role]
+            min_required_level = min(required_levels) if required_levels else 0
+            
+            if user_level < min_required_level:
                 raise HTTPException(
                     status_code=403,
-                    detail=f"Insufficient permissions. Required roles: {', '.join(required_role)}",
+                    detail=f"Insufficient permissions. Required roles: {', '.join(required_role)} (or higher)",
                     headers={"WWW-Authenticate": "Bearer"},
                 )
         else:
-            # Check against a single required role
-            if user_role != required_role.lower():
+            required_level = ROLE_HIERARCHY.get(required_role.lower(), 0)
+            if user_level < required_level:
                 raise HTTPException(
                     status_code=403,
-                    detail=f"{required_role} role required",
+                    detail=f"Insufficient permissions. {required_role} role (or higher) required",
                     headers={"WWW-Authenticate": "Bearer"},
                 )
         return user

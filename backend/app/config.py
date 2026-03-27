@@ -121,6 +121,7 @@ class Settings(BaseSettings):
     
     # Admin user
     ADMIN_EMAIL: str = os.getenv("ADMIN_EMAIL", "admin@example.com")
+    FACULTY_EMAILS: str = os.getenv("FACULTY_EMAILS", "")
     ADMIN_DEFAULT_PASSWORD: str = os.getenv("ADMIN_DEFAULT_PASSWORD", "Admin123!")
     
     # Vector database settings

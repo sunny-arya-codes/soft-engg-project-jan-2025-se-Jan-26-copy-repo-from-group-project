@@ -216,32 +216,31 @@ def get_llm(functions=None, use_fallback=False, use_grounding=True):
     available_models = get_available_models()
     logger.info(f"All available models: {available_models}")
     
-    # Define model preferences - updated with newest experimental models first
+    # Define model preferences - prioritized models with higher quotas for free tier
     preferred_models = [
-        # Use Gemini 2.5 preview first
-        "gemini-2.5-pro-preview",
-        "gemini-2.5-pro-exp",
+        # Use Gemini 1.5 Flash first as it has the highest quota on free tier
+        "gemini-1.5-flash",
+        "gemini-1.5-flash-latest",
         
         # Then Gemini 2.0 flash
         "gemini-2.0-flash",
         "gemini-2.0-flash-exp",
-        "gemini-2.0-flash-exp-image-generation",
         
-        # Other experimental versions
-        "gemini-exp-",
+        # Then experimental/preview models (often have lower quotas)
+        "gemini-2.5-pro-preview",
+        "gemini-2.5-pro-exp",
         "gemini-2.0-pro-exp",
         
-        # Fallback to other models
+        # Fallback to older versions
         "gemini-1.5-pro-latest",
-        "gemini-1.5-flash-latest",
-        "gemini-1.5-pro", 
-        "gemini-1.5-flash"
+        "gemini-1.5-pro",
+        "gemini-1.0-pro"
     ]
     
     fallback_models = [
-        "gemini-2.0-flash",  # Primary fallback
-        "gemini-1.5-flash-latest",  # Secondary fallback
-        "gemini-1.0-pro"  # Last resort fallback
+        "gemini-1.5-flash",  # Best for quota
+        "gemini-1.5-flash-latest",
+        "gemini-1.0-pro"  # Simplest
     ]
     
     # Select model based on availability
@@ -298,16 +297,17 @@ def get_llm(functions=None, use_fallback=False, use_grounding=True):
     logger.info(f"Grounding enabled: {use_grounding}")
     logger.info(f"Tools configured: {len(tools)} tools")
     
-    # Create the model instance
+    # Create the model instance with increased retries and timeout
     model = ChatGoogleGenerativeAI(
         model=model_name,
         google_api_key=os.getenv("GOOGLE_API_KEY"),
-        temperature=0.0,  # Use zero temperature for deterministic function calling
-        convert_system_message_to_human=False,  # Updated - no longer using deprecated approach
-        tools=tools if tools else None,  # Pass the function definitions and grounding tools to the model
-        max_retries=1,  # Reduce retry attempts to fail faster
+        temperature=0.0,
+        convert_system_message_to_human=False,
+        tools=tools if tools else None,
+        max_retries=3,  # Increased retries for tenacity to handle 429s
+        timeout=60,     # Increased timeout
         additional_kwargs={
-            "tool_choice": "auto"  # Enable automatic tool choice for OpenAI compatibility
+            "tool_choice": "auto"
         }
     )
     
@@ -420,6 +420,18 @@ async def call_llm(messages, use_fallback=False, use_grounding=True):
     # Create a cache key based on the model settings - fixed with local variables
     cache_key = f"primary_grounding_{use_grounding}" if not use_fallback else f"fallback_grounding_{use_grounding}"
     
+    from tenacity import retry, wait_exponential, stop_after_attempt, retry_if_exception_type
+    import google.api_core.exceptions
+
+    @retry(
+        wait=wait_exponential(multiplier=1, min=2, max=10),
+        stop=stop_after_attempt(3),
+        retry=retry_if_exception_type(google.api_core.exceptions.ResourceExhausted),
+        reraise=True
+    )
+    async def _invoke_with_retry(model_instance, prompt_instance):
+        return await model_instance.ainvoke(prompt_instance)
+
     # Try with the primary model first
     try:
         # Check if we have a cached LLM instance
@@ -445,39 +457,26 @@ async def call_llm(messages, use_fallback=False, use_grounding=True):
             prompt_template = call_llm._prompt_template
             logger.info("Using cached prompt template")
         
-        # Apply the prompt template to the current state (this can't be cached as messages change)
+        # Apply the prompt template to the current state
         prompt = await prompt_template.ainvoke({"messages": messages})
         
-        # Call the LLM with the prompt
+        # Call the LLM with the prompt and retries
         start_time = time.time()
-        logger.info("Sending request to LLM...")
-        response = await llm.ainvoke(prompt)
+        logger.info(f"Sending request to LLM ({cache_key})...")
+        response = await _invoke_with_retry(llm, prompt)
         elapsed = time.time() - start_time
         logger.info(f"LLM response received in {elapsed:.2f} seconds")
         
-        # Log the raw response for debugging
-        if hasattr(response, 'additional_kwargs'):
-            logger.debug(f"Response additional_kwargs: {json.dumps(response.additional_kwargs, default=str)}")
-        
-        # Check for grounding evidence in the response
-        has_grounding = False
-        if hasattr(response, 'additional_kwargs') and 'grounding' in str(response.additional_kwargs):
-            has_grounding = True
-            logger.info("Grounding information detected in response")
-        
-        logger.info(f"Grounding enabled: {use_grounding}, Grounding detected: {has_grounding}")
+        # Log basics
+        logger.info(f"Grounding enabled: {use_grounding}")
         
     except Exception as e:
-        logger.warning(f"Primary model failed: {str(e)}. Falling back to secondary model")
-        import traceback
-        logger.warning(traceback.format_exc())
+        logger.warning(f"Primary model ({cache_key}) failed: {str(e)}. Falling back to secondary model")
         
         # Try the fallback model
         try:
-            # Check if we have a cached fallback LLM instance
             fallback_key = "fallback_grounding_true"
             if fallback_key not in _llm_cache:
-                # Create and cache the fallback LLM
                 logger.info("Creating new fallback LLM instance")
                 _llm_cache[fallback_key] = get_llm(formatted_functions, use_fallback=True, use_grounding=True)
             else:
@@ -486,29 +485,19 @@ async def call_llm(messages, use_fallback=False, use_grounding=True):
             # Get the cached fallback LLM
             llm_fallback = _llm_cache[fallback_key]
             
-            # Use the same prompt template as before
+            # Use the same prompt template
             prompt_template = call_llm._prompt_template
             prompt = await prompt_template.ainvoke({"messages": messages})
             
-            # Call the fallback LLM
+            # Call the fallback LLM with retries
             start_time = time.time()
             logger.info("Sending request to fallback LLM...")
-            response = await llm_fallback.ainvoke(prompt)
+            response = await _invoke_with_retry(llm_fallback, prompt)
             elapsed = time.time() - start_time
             logger.info(f"Fallback LLM response received in {elapsed:.2f} seconds")
             
-            # Check for grounding evidence in fallback response
-            has_grounding = False
-            if hasattr(response, 'additional_kwargs') and 'grounding' in str(response.additional_kwargs):
-                has_grounding = True
-                logger.info("Grounding information detected in fallback response")
-            
-            logger.info(f"Fallback grounding enabled: {use_grounding}, Grounding detected: {has_grounding}")
-            
         except Exception as fallback_error:
             logger.error(f"Fallback model also failed: {str(fallback_error)}")
-            import traceback
-            logger.error(traceback.format_exc())
             raise
     
     # Process tool/function calls from the response

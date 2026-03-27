@@ -10,7 +10,7 @@ from pydantic import BaseModel
 from app.database import get_db
 from app.services.auth_service import get_current_user
 from app.schemas.enrollment import StudentInfo, StudentProgress
-from app.models.course import Course, CourseEnrollment
+from app.models.course import Course, CourseEnrollment, EnrollmentStatus
 from app.models.user import User
 
 # Define the Role enum locally since it's missing
@@ -48,7 +48,7 @@ async def check_user_permissions(current_user: Dict[str, Any], required_roles: L
     
     # Special case: students can access their own data
     if (user_role == Role.STUDENT.value and 
-        student_id and current_user.get("id") == student_id):
+        student_id and current_user.get("sub") == student_id):
         return
         
     raise HTTPException(
@@ -482,7 +482,8 @@ async def enroll_students_to_course(
                 enrollment_obj = CourseEnrollment(
                     course_id=course_id,
                     student_id=student.id, 
-                    user_id=current_user.get("id")
+                    user_id=current_user.get("sub"),
+                    status=EnrollmentStatus.ENROLLED.value
                 )
                 enrollments.append(enrollment_obj)
             else:

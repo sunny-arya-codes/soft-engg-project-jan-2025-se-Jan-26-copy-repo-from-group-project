@@ -46,6 +46,7 @@ async def get_new_course_code(db: AsyncSession, user_id: uuid.UUID):
     try:
         user_result = await db.execute(select(User).where(User.id == user_id))
         user = user_result.scalars().first()
+        logger.info(f"User: {user.to_dict()}")
         if user.role.lower() not in ['faculty']:
             raise HTTPException(status_code=403, detail="You are forbidden to use the resource")
         

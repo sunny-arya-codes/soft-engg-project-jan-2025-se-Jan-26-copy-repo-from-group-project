@@ -51,7 +51,7 @@ async def generate_roadmap(
         # Get course modules
         try:
             # Use current user's ID for authorization
-            user_id = current_user.get("id")
+            user_id = current_user.get("sub")
             modules = await get_modules_by_course(course_id, db, user_id)
         except Exception as e:
             logger.error(f"Error fetching course modules: {str(e)}")
@@ -133,7 +133,7 @@ async def update_roadmap_progress(
         Updated progress information
     """
     try:
-        logger.info(f"Updating roadmap progress for user {current_user.get('id')}, "
+        logger.info(f"Updating roadmap progress for user {current_user.get('sub')}, "
                    f"roadmap {progress.roadmapId}, milestone {progress.milestoneId}")
         
         # In a production app, we would save this to a database
@@ -145,7 +145,7 @@ async def update_roadmap_progress(
         # Mock response
         return {
             "success": True,
-            "userId": current_user.get("id"),
+            "userId": current_user.get("sub"),
             "roadmapId": progress.roadmapId,
             "milestoneId": progress.milestoneId,
             "status": progress.status,

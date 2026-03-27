@@ -157,8 +157,8 @@ async def chat(request: LLMRequest, req: Request, current_user: Optional[Dict[st
         
         # Get user ID if available
         user_id = None
-        if current_user and "id" in current_user:
-            user_id = current_user.get("id")
+        if current_user and "sub" in current_user:
+            user_id = current_user.get("sub")
             logger.info(f"Authenticated user: {user_id}")
         else:
             logger.info("No authenticated user found")
@@ -407,8 +407,8 @@ async def execute_function(
         
         # Get user ID if available
         user_id = None
-        if current_user and "id" in current_user:
-            user_id = current_user.get("id")
+        if current_user and "sub" in current_user:
+            user_id = current_user.get("sub")
             logger.info(f"Authenticated user: {user_id}")
         
         # Add user_id to function args if needed and not already provided
@@ -467,7 +467,7 @@ async def get_user_courses(
     This is a convenience endpoint for testing.
     """
     try:
-        user_id = current_user.get("id")
+        user_id = current_user.get("sub")
         if not user_id:
             raise HTTPException(status_code=401, detail="Authentication required")
         

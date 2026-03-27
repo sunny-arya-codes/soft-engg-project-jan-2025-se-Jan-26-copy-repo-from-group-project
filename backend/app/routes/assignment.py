@@ -98,7 +98,7 @@ async def create_assignment(
     """
     try:
         assignment_data = assignment.model_dump()
-        result = await AssignmentService.create_assignment(db, assignment_data, current_user["id"])
+        result = await AssignmentService.create_assignment(db, assignment_data, current_user["sub"])
         
         return {
             "message": "Assignment created successfully",
@@ -347,7 +347,7 @@ async def submit_assignment(
         result = await AssignmentService.create_submission(
             db, 
             assignment_id, 
-            current_user["id"], 
+            current_user["sub"], 
             submission_data,
             file
         )
@@ -427,7 +427,7 @@ async def get_my_submission(
     - **submission**: Submission object with all details or null if no submission found
     """
     try:
-        submission = await AssignmentService.get_student_submission(db, assignment_id, current_user["id"])
+        submission = await AssignmentService.get_student_submission(db, assignment_id, current_user["sub"])
         
         if not submission:
             return {
@@ -509,7 +509,7 @@ async def grade_submission(
             db, 
             submission_id, 
             grade_data.dict(), 
-            current_user["id"]
+            current_user["sub"]
         )
         
         return {
@@ -553,7 +553,7 @@ async def download_submission_file(
         
         # Check if user has permission to access this file
         is_faculty = current_user.get("role") == "faculty"
-        is_owner = str(submission.student_id) == str(current_user["id"])
+        is_owner = str(submission.student_id) == str(current_user["sub"])
         
         if not (is_faculty or is_owner):
             raise HTTPException(status_code=403, detail="You do not have permission to access this file")
@@ -655,7 +655,7 @@ async def get_submission_file_url(
     # Check if the user has access to this submission
     # Students can only access their own submissions
     # Faculty can access all submissions for their courses
-    if current_user.role == "student" and submission.student_id != current_user.id:
+    if current_user.get("role") == "student" and str(submission.student_id) != str(current_user.get("sub")):
         raise HTTPException(status_code=403, detail="You don't have permission to access this submission")
     
     # If the user is faculty, check if they are teaching the course
